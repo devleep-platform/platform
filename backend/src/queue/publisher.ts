@@ -10,16 +10,17 @@ async function enqueueRiverJob(
   scheduledAt?: Date
 ): Promise<number> {
   const scheduled = scheduledAt ?? new Date();
+  const state = scheduled > new Date() ? "scheduled" : "available";
   const result = await query(
     `INSERT INTO river_job (
       kind, state, args, max_attempts,
       queue, priority, scheduled_at, metadata, tags
     ) VALUES (
-      $1, 'available', $2, $3,
-      'default', 1, $4, '{}', '{}'
+      $1, $2, $3, $4,
+      'default', 1, $5, '{}', '{}'
     )
     RETURNING id`,
-    [kind, JSON.stringify(args), 3, scheduled]
+    [kind, state, JSON.stringify(args), 3, scheduled]
   );
 
   const jobId = result.rows[0].id;
@@ -100,6 +101,17 @@ export async function publishTeardownEnvironmentJob(args: {
     reason: args.reason ?? "manual",
     timestamp: Date.now(),
   });
+}
+
+export async function scheduleSessionExpiryJob(
+  sessionId: string,
+  timeoutAt: Date
+): Promise<void> {
+  await enqueueRiverJob(
+    "expire_session",
+    { sessionId, timestamp: Date.now() },
+    timeoutAt
+  );
 }
 
 export async function scheduleEnvironmentExpiryJob(

@@ -8,6 +8,7 @@ import {
   publishSwitchScenarioJob,
   publishValidationJob,
   scheduleEnvironmentExpiryJob,
+  scheduleSessionExpiryJob,
   environmentExpiresAt,
 } from "../../queue/publisher.js";
 import {
@@ -101,6 +102,8 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
         const sessionId = uuid();
         const durableObjectId = uuid();
         const expiresAt = environmentExpiresAt();
+        const timeoutMinutes = lab.timeout_minutes || 120;
+        const sessionTimeoutDate = new Date(Date.now() + timeoutMinutes * 60 * 1000);
 
         const existingEnv = await query(
           `SELECT id, current_scenario, terraform_outputs, expires_at
@@ -130,7 +133,6 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
 
           // Generate a unique session token for ttyd authentication
           const sessionToken = generateSessionToken();
-          const timeoutMinutes = lab.timeout_minutes || 120;
 
           await query(
             `INSERT INTO lab_sessions
@@ -146,6 +148,8 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
               env.terraform_outputs ?? {},
             ]
           );
+
+          await scheduleSessionExpiryJob(sessionId, sessionTimeoutDate);
 
           await publishSwitchScenarioJob({
             environmentId,
@@ -221,7 +225,7 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
           await query(
             `INSERT INTO lab_sessions
              (id, user_id, lab_id, environment_id, status, durable_object_id, timeout_at, created_at)
-             VALUES ($1, $2, $3, $4, 'provisioning', $5, NOW() + INTERVAL '${lab.timeout_minutes || 120} minutes', NOW())`,
+             VALUES ($1, $2, $3, $4, 'provisioning', $5, NOW() + INTERVAL '${timeoutMinutes} minutes', NOW())`,
             [sessionId, userId, lab.id, environmentId, durableObjectId]
           );
 
@@ -241,9 +245,9 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
           });
 
           await scheduleEnvironmentExpiryJob(environmentId, userId, expiresAt);
+          await scheduleSessionExpiryJob(sessionId, sessionTimeoutDate);
         }
 
-        const sessionTimeoutAt = new Date(Date.now() + (lab.timeout_minutes || 120) * 60 * 1000).toISOString();
         const sessionCreatedAt = new Date().toISOString();
 
         return reply.send({
@@ -255,7 +259,7 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
           sshHostname: tunnelHostname || undefined,
           labName: lab.title,
           expiresAt,
-          timeoutAt: sessionTimeoutAt,
+          timeoutAt: sessionTimeoutDate.toISOString(),
           createdAt: sessionCreatedAt,
         });
       } catch (error) {

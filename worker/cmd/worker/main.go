@@ -85,6 +85,7 @@ func main() {
 	teardownWorker := workers.NewTeardownWorker(dbPool, durableObjectURL)
 	teardownEnvWorker := workers.NewTeardownEnvironmentWorker(dbPool, durableObjectURL)
 	expireEnvWorker := workers.NewExpireEnvironmentWorker(dbPool)
+	expireSessionWorker := workers.NewExpireSessionWorker(dbPool)
 
 	// Register workers into a bundle
 	riverWorkers := river.NewWorkers()
@@ -95,6 +96,7 @@ func main() {
 	river.AddWorker(riverWorkers, teardownWorker)
 	river.AddWorker(riverWorkers, teardownEnvWorker)
 	river.AddWorker(riverWorkers, expireEnvWorker)
+	river.AddWorker(riverWorkers, expireSessionWorker)
 
 	// Run River database migrations automatically
 	log.Printf("Running River database migrations...")
@@ -117,7 +119,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create River client: %v", err)
 	}
-	log.Printf("✓ Registered workers: provision, provision_environment, switch_scenario, validation, teardown, teardown_environment, expire_environment")
+	log.Printf("✓ Registered workers: provision, provision_environment, switch_scenario, validation, teardown, teardown_environment, expire_environment, expire_session")
 
 	defer riverClient.Stop(ctx)
 

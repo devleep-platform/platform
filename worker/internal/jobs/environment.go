@@ -63,3 +63,14 @@ type ExpireEnvironmentArgs struct {
 func (ExpireEnvironmentArgs) Kind() string {
 	return "expire_environment"
 }
+
+// ExpireSessionArgs is a scheduled job fired when a lab session's timeout_minutes is reached.
+// It marks the session expired but leaves the environment running for future scenario switches.
+type ExpireSessionArgs struct {
+	SessionID string `json:"sessionId"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+func (ExpireSessionArgs) Kind() string {
+	return "expire_session"
+}
