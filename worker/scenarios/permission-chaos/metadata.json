@@ -1,0 +1,8 @@
+{
+  "id": "permission-chaos",
+  "name": "Permission Chaos",
+  "description": "A web application was deployed by a script that ran as root and set incorrect permissions throughout /var/www and /etc/nginx. nginx fails to serve content and cannot write to its log directory. A separate application directory /opt/webapp has files owned by the wrong user, preventing the service account from reading its own config.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 45,
+  "tags": ["permissions", "nginx", "ownership", "chmod", "chown"]
+}

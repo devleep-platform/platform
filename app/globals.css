@@ -1,0 +1,164 @@
+@import "@xterm/xterm/css/xterm.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background: #f7f8fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 145, 178, 0.06), rgba(247, 248, 250, 0) 240px),
+    #f7f8fa;
+  color: #111827;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(8, 145, 178, 0.18);
+}
+
+.xterm {
+  height: 100%;
+  padding: 14px;
+}
+
+.xterm-viewport,
+.xterm-screen {
+  border-radius: 6px;
+}
+
+/* ── Platform shell design system ────────────────────────────────────────── */
+
+.grid-bg {
+  background-color: #070B11;
+  background-image:
+    linear-gradient(to right, #0F172A 1px, transparent 1px),
+    linear-gradient(to bottom, #0F172A 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.scanline {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.08)
+  );
+  background-size: 100% 4px;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink { animation: blink 1s step-end infinite; }
+
+/* ── Dark thin scrollbars ─────────────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1E293B #070B11;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070B11;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+::-webkit-scrollbar-corner {
+  background: #070B11;
+}
+
+/* Higher-specificity override for containers that need the styled scrollbar
+   explicitly (e.g. where UA defaults or third-party CSS win the cascade). */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #0F172A;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+/* xterm.js viewport scrollbar — overrides the white default inside
+   embedded terminal panels (higher specificity than the * rules above). */
+.xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #0A0D12;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 4px;
+}
+
+.xterm-viewport::-webkit-scrollbar-track {
+  background: #0A0D12;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 0;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}

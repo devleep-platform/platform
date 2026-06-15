@@ -1,0 +1,7 @@
+# Rewrite dynamic app routes to their static shell.
+# Cloudflare serves the shell HTML at the real URL without changing it,
+# so useParams() picks up the correct slug after client-side hydration.
+/labs/:slug/   /labs/__shell/   200
+/labs/:slug    /labs/__shell/   200
+/tracks/:slug/ /tracks/__shell/ 200
+/tracks/:slug  /tracks/__shell/ 200

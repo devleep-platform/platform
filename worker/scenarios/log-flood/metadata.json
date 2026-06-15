@@ -1,0 +1,8 @@
+{
+  "id": "log-flood",
+  "name": "Unrotated Log Filling Disk",
+  "description": "A webapp logger service writes ~100KB/sec to /var/log/webapp/access.log with no logrotate configuration. The disk is already at 60% and growing. The student must write a logrotate config, test it, and configure rotation.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 45,
+  "tags": ["logs", "logrotate", "disk", "linux"]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "performance-degraded",
+  "name": "Multi-Vector Performance Degradation",
+  "description": "Three simultaneous performance issues are affecting the server: (1) a CPU-bound process consuming 60% of one core, (2) a disk I/O process writing to /tmp in a tight loop, and (3) a Python process that slowly allocates memory up to 150MB. Students must identify each issue separately using the correct diagnostic tools.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 60,
+  "tags": ["performance", "cpu", "memory", "io", "strace", "investigation"]
+}

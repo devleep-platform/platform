@@ -1,0 +1,8 @@
+{
+  "id": "cron-silent-failure",
+  "name": "Silent Cron Failure",
+  "description": "A database backup cron job has been configured but is failing silently. The job runs every 5 minutes but produces no output and no log entries. The script itself works when run manually as the ubuntu user. The failure is caused by two issues: missing PATH in the cron environment, and a missing destination directory that the script assumes exists.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["cron", "automation", "PATH", "debugging"]
+}

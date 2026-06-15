@@ -1,0 +1,8 @@
+{
+  "id": "boot-misconfigured",
+  "name": "Slow Boot with Failing Dependencies",
+  "description": "Two slow services (8s + 5s sequential) and one service with a broken dependency are enabled on boot. systemd-analyze blame shows a poor boot time. The student diagnoses and repairs the boot chain.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["boot", "systemd", "performance", "linux"]
+}

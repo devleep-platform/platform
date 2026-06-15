@@ -1,0 +1,8 @@
+{
+  "id": "ssh-lab",
+  "name": "SSH Lab Target",
+  "description": "Starts a Docker sshd container on port 2222 as a target for SSH exercises. Also runs a minimal HTTP service on port 8080 inside the container for port-forwarding exercises.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 60,
+  "tags": ["ssh", "networking", "linux"]
+}

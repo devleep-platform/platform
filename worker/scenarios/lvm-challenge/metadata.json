@@ -1,0 +1,8 @@
+{
+  "id": "lvm-challenge",
+  "name": "LVM Logical Volume Full",
+  "description": "Creates a volume group from loop devices and mounts a nearly-full logical volume at /mnt/appdata. An application is failing to write because the LV has no space. A second unattached loop device is available to extend the VG.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 60,
+  "tags": ["storage", "lvm", "linux", "disk"]
+}

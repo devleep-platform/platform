@@ -1,0 +1,8 @@
+{
+  "id": "hello-linux",
+  "name": "Clean Ubuntu Environment",
+  "description": "Fresh Ubuntu 22.04 with nginx running, realistic log files, and standard DevOps tools installed. No broken state — this is the starting point for labs where students build from scratch.",
+  "compatible_modules": ["labs/linux-ec2", "labs/docker-ec2", "labs/cicd-ec2", "labs/iac-ec2"],
+  "setup_timeout_seconds": 120,
+  "tags": ["baseline", "nginx", "logs"]
+}

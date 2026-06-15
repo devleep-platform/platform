@@ -1,0 +1,8 @@
+{
+  "id": "limits-exhausted",
+  "name": "File Descriptor Limits Exhausted",
+  "description": "A systemd service is running with an artificially low file descriptor limit of 50. The application writes 'too many open files' errors to the log continuously. The student must diagnose and fix both the per-service and system-wide limits.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["kernel", "limits", "performance", "systemd", "linux"]
+}

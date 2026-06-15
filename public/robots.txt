@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /community
+Allow: /docs
+Allow: /privacy
+Allow: /terms
+Allow: /security
+
+Disallow: /dashboard
+Disallow: /catalog
+Disallow: /tracks
+Disallow: /labs/
+Disallow: /settings
+Disallow: /connect-cloud
+Disallow: /auth/
+Disallow: /api/
+
+Sitemap: https://devleep.com/sitemap.xml

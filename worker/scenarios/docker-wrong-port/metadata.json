@@ -1,0 +1,8 @@
+{
+  "id": "docker-wrong-port",
+  "name": "Wrong Port Mapping",
+  "description": "nginx is running but mapped to host port 9999 instead of the expected 8080. Port 8080 returns connection refused. Student must identify the wrong mapping with docker ps / docker port and re-run with the correct -p flag.",
+  "compatible_modules": ["labs/docker-ec2"],
+  "setup_timeout_seconds": 60,
+  "tags": ["docker", "networking", "ports", "containers"]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "cert-expired",
+  "name": "TLS Certificate Expiring",
+  "description": "Configures nginx with a TLS certificate that expires in less than 24 hours. The monitoring system just fired an alert. The student must inspect, replace, and automate renewal before the service goes down.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["ssl", "tls", "nginx", "certificates", "security"]
+}

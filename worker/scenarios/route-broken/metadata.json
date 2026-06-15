@@ -1,0 +1,8 @@
+{
+  "id": "route-broken",
+  "name": "Broken Static Route",
+  "description": "A blackhole route for 192.168.100.0/24 has been added to the routing table, silently dropping traffic to that subnet. An app is logging connection failures every 10 seconds. Student uses iproute2 to diagnose, fix, and make the change persistent.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 20,
+  "tags": ["networking", "iproute2", "routing", "linux"]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "exposed-secrets",
+  "name": "Credentials Exposed in Git History and Filesystem",
+  "description": "A git repository at /opt/app contains AWS credentials and a database password in both the current files and commit history. A .env file with the same secrets exists in /home/ubuntu. Student must audit, remove plaintext values from live files, add prevention measures (.gitignore or pre-commit hook), and write a remediation plan.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["security", "secrets", "git", "credentials", "aws", "linux"]
+}

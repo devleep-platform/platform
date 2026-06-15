@@ -1,0 +1,8 @@
+{
+  "id": "docker-volume-not-mounted",
+  "name": "Volume Not Mounted",
+  "description": "nginx is running on port 8080 but serving its default welcome page. The real site is at /opt/site on the host but was never mounted into the container. Student must stop, remove, and re-run with -v /opt/site:/usr/share/nginx/html:ro.",
+  "compatible_modules": ["labs/docker-ec2"],
+  "setup_timeout_seconds": 60,
+  "tags": ["docker", "volumes", "mounts", "nginx", "storage"]
+}

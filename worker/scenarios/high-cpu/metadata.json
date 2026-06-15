@@ -1,0 +1,8 @@
+{
+  "id": "high-cpu",
+  "name": "Runaway CPU Process",
+  "description": "A poorly written data processing script is consuming 80-90% CPU. It was started by a systemd service named 'dataprocessor'. The service has Restart=always so killing the process alone is not enough — the student must also stop and disable the service. A secondary process was started via cron as a backup.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["cpu", "process", "systemd", "performance"]
+}

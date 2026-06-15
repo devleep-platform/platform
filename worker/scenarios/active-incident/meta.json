@@ -1,0 +1,8 @@
+{
+  "id": "active-incident",
+  "name": "Active Incident: Multi-System Failure",
+  "description": "A production server is experiencing a cascading failure. Four simultaneous issues are present: (1) disk is at 93% due to a large log file, (2) nginx has a broken config preventing restart, (3) a runaway process is consuming 70%+ CPU, and (4) a critical cron job is failing silently. Students must triage, prioritise, and fix in the correct order.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 120,
+  "tags": ["incident", "multi-symptom", "triage", "disk", "cpu", "nginx", "cron"]
+}

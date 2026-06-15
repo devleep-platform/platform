@@ -1,0 +1,8 @@
+{
+  "id": "disk-full",
+  "name": "Disk Full — Service Degrading",
+  "description": "The root filesystem is at 92-94% capacity due to large application log files in /var/log/webapp/. nginx is running but log writes are failing. A background process is still writing to the large log file. Students must identify the culprit using df and find, truncate active logs safely, and configure logrotate to prevent recurrence.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 90,
+  "tags": ["disk", "logs", "logrotate", "storage"]
+}

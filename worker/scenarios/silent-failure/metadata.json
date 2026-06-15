@@ -1,0 +1,8 @@
+{
+  "id": "silent-failure",
+  "name": "Process Failing Silently",
+  "description": "A dataprocessor service keeps restarting with exit code 1 but produces zero log output. Three issues are hidden: a missing config directory, a missing socket directory, and a permission-denied credentials file. Student uses strace to find all three.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 20,
+  "tags": ["strace", "debugging", "linux", "performance"]
+}

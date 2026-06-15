@@ -1,0 +1,15 @@
+.git
+.gitignore
+README.md
+*.md
+node_modules/.bin
+node_modules/@types
+node_modules/typescript
+node_modules/ts-node
+node_modules/tsx
+.env.example
+.env.local
+.DS_Store
+*.log
+Dockerfile
+.dockerignore

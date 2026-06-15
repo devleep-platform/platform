@@ -1,0 +1,8 @@
+{
+  "id": "log-injection",
+  "name": "Security Incident Logs",
+  "description": "Realistic logs have been injected into /var/log/auth.log and /var/log/app.log simulating a brute-force SSH attack followed by a successful login and subsequent suspicious behaviour. Students must use grep, awk, and cut to reconstruct the timeline and identify the attack.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["logs", "security", "grep", "awk", "investigation"]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "multi-server",
+  "name": "Three-Node Fleet",
+  "description": "Starts three Docker containers acting as fleet members (web-1, web-2, web-3) accessible via SSH on ports 2221-2223. A fleet key is pre-generated at ~/.ssh/fleet_key. web-3 intentionally has nginx missing to simulate config drift.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 90,
+  "tags": ["fleet", "multi-server", "ssh", "linux", "automation"]
+}

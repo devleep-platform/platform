@@ -1,0 +1,8 @@
+{
+  "id": "gauntlet",
+  "name": "Cascade Failure — Disk Full, Service Crashed, 502 Errors",
+  "description": "Three simultaneous production failures: disk at ~95% from a crash-loop log flood, api.service stopped (deployment bug — missing /etc/api/config.yaml), and nginx returning 502. The disk must be freed first to unblock logging; then /etc/api/config.yaml created so api.service can start; nginx recovers automatically once the API is healthy. Backup config available at /opt/api/config-backup/config.yaml.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 120,
+  "tags": ["incident", "cascade", "disk", "nginx", "service", "triage", "linux"]
+}

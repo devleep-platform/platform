@@ -1,0 +1,8 @@
+{
+  "id": "misconfigured-server",
+  "name": "Security Misconfigurations — Five Critical Findings",
+  "description": "Five deliberate security misconfigurations: a world-writable file in /etc, an unauthorized SUID binary, a non-root account with UID 0, SSH root login enabled, and a root cron job running a world-writable script. Student must find and remediate all five.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 30,
+  "tags": ["security", "hardening", "suid", "permissions", "ssh", "linux"]
+}

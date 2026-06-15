@@ -1,0 +1,8 @@
+{
+  "id": "docker-container-wont-start",
+  "name": "Container Won't Start",
+  "description": "A container exits immediately because the image CMD references /app/start.sh which does not exist. Student must inspect logs, read the exit code (127), understand the bad entrypoint, and re-run with a working command.",
+  "compatible_modules": ["labs/docker-ec2"],
+  "setup_timeout_seconds": 120,
+  "tags": ["docker", "debugging", "entrypoint", "exit-codes"]
+}

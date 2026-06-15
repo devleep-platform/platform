@@ -1,0 +1,68 @@
+node_modules
+.npm-cache
+.next
+out
+.open-next
+.vercel
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+wrangler.toml
+
+# Terraform — ALL .tfvars files contain secrets, never commit them
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/*.tfplan
+terraform/tfplan
+terraform/*.tfvars
+terraform/*.tfvars.*
+terraform/.env.local
+terraform/crash.log
+terraform/crash.*.log
+terraform/override.tf
+terraform/override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+terraform/**/*.backup
+terraform/*.log
+terraform/*.txt
+
+# Compiled binaries
+worker/bin/
+worker/*.exe
+workers/*.exe
+
+# Service env files
+backend/.env
+backend/.env.*
+workers/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Secrets
+.env
+.env.*.secret
+*.key
+*.pem
+credentials.json
+
+# Build artifacts
+tsconfig.tsbuildinfo
+*.zip
+*.exe
+*.log
+worker/*.exe
+workers/*.exe
+

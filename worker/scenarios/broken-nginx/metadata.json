@@ -1,0 +1,8 @@
+{
+  "id": "broken-nginx",
+  "name": "Broken nginx Configuration",
+  "description": "nginx is installed and was previously running, but the configuration now contains a syntax error. systemctl restart nginx fails. journalctl shows the error. The student must diagnose using nginx -t and journalctl, fix the specific directive, and restore service.",
+  "compatible_modules": ["labs/linux-ec2"],
+  "setup_timeout_seconds": 60,
+  "tags": ["nginx", "systemd", "config", "broken-service"]
+}

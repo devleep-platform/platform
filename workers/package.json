@@ -1,0 +1,16 @@
+{
+  "name": "devops-lab-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for real-time lab session streaming",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.28.0",
+    "@cloudflare/workers-types": "^4.20240114.1"
+  }
+}
