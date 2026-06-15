@@ -1,4 +1,5 @@
 #!/bin/bash
+# Devleep golden AMI provisioner — bakes all lab software into a public AMI.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
