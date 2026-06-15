@@ -23,7 +23,14 @@ provider "aws" {
 
 data "aws_availability_zones" "available" {}
 
+locals {
+  golden_ami_ids = jsondecode(file("${path.module}/ami_ids.json"))
+  golden_ami_id  = lookup(local.golden_ami_ids, var.region, "")
+  use_golden_ami = local.golden_ami_id != ""
+}
+
 data "aws_ami" "ubuntu" {
+  count       = local.use_golden_ami ? 0 : 1
   most_recent = true
 
   owners = ["099720109477"] # Canonical
@@ -121,7 +128,7 @@ resource "aws_security_group" "lab" {
 resource "aws_instance" "node" {
   count = length(var.nodes)
 
-  ami                    = data.aws_ami.ubuntu.id
+  ami                    = local.use_golden_ami ? local.golden_ami_id : data.aws_ami.ubuntu[0].id
   instance_type          = var.nodes[count.index].instance_type
   subnet_id              = aws_subnet.lab.id
   vpc_security_group_ids = [aws_security_group.lab.id]

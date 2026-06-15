@@ -1,0 +1,66 @@
+name: Build Golden AMI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/packer/**'
+
+permissions:
+  id-token: write
+  contents: write
+
+env:
+  REGION: ap-south-1
+
+jobs:
+  build:
+    name: Build and publish golden AMI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PACKER_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PACKER_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: "1.11.0"
+
+      - name: Packer init
+        run: packer init worker/packer/golden-ami.pkr.hcl
+
+      - name: Build AMI
+        id: build
+        run: |
+          packer build \
+            -var "region=${{ env.REGION }}" \
+            -machine-readable \
+            worker/packer/golden-ami.pkr.hcl | tee packer.log
+
+          AMI_ID=$(grep 'artifact,0,id' packer.log | grep -oP 'ami-[a-z0-9]+')
+          echo "ami_id=$AMI_ID" >> $GITHUB_OUTPUT
+          echo "Built AMI: $AMI_ID"
+
+      - name: Update ami_ids.json
+        run: |
+          cat > worker/app/terraform/modules/labs/linux-ec2/ami_ids.json << EOF
+          {
+            "ap-south-1": "${{ steps.build.outputs.ami_id }}"
+          }
+          EOF
+
+      - name: Commit updated ami_ids.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update golden AMI: ${{ steps.build.outputs.ami_id }} (ap-south-1)"
+          file_pattern: worker/app/terraform/modules/labs/linux-ec2/ami_ids.json
+          commit_user_name: devleep-bot
+          commit_user_email: bot@devleep.com

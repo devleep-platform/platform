@@ -37,6 +37,9 @@
   ],
   "exclude": [
     "node_modules",
+    "backend",
+    "workers",
+    "worker",
     "refcomponentforallofhomepage.tsx",
     "homepage.tsx",
     "archive-labs"
