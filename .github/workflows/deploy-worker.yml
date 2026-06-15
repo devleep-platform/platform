@@ -87,7 +87,7 @@ jobs:
             STATE=$(az containerapp revision list \
               --name ${{ env.APP_NAME }} \
               --resource-group ${{ env.RG }} \
-              --query "sort_by([].{name:name,ts:properties.createdTime}, &ts)[-1].properties.healthState" \
+              --query "sort_by(@, &properties.createdTime)[-1].properties.healthState" \
               -o tsv 2>/dev/null || echo "Unknown")
             echo "Attempt $i/20: $STATE"
             [[ "$STATE" == "Healthy" ]] && exit 0

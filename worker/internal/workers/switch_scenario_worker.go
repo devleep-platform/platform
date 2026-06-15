@@ -103,7 +103,7 @@ func (w *SwitchScenarioWorker) Work(ctx context.Context, job *river.Job[jobs.Swi
 		errMsg := "Tunnel not available for scenario switching"
 		w.notify(args, "error", errMsg, nil)
 		_ = updateSessionStatus(ctx, w.dbPool, args.SessionID, "failed")
-		return fmt.Errorf(errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 
 	// Skip pre-flight health check - SSH operations have built-in retry logic that handles
