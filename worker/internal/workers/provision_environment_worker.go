@@ -17,6 +17,7 @@ import (
 	"devops-lab/worker/internal/awsclient"
 	"devops-lab/worker/internal/cloudflare"
 	"devops-lab/worker/internal/jobs"
+	"devops-lab/worker/internal/labssh"
 	"devops-lab/worker/internal/scenario"
 )
 
@@ -235,18 +236,55 @@ func (w *ProvisionEnvironmentWorker) Work(ctx context.Context, job *river.Job[jo
 		setupCtx, setupCancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer setupCancel()
 
-		// EC2 boot + cloudflared Phase-1 install takes ~150s after tofu apply:
-		// kernel boot (~30s) + cloud-init start (~10s) + cloudflared download
-		// (~70s) + service start + Cloudflare edge connection (~30s).
-		// Waiting here avoids burning a 90s connTimeout attempt on a tunnel
-		// that hasn't established its edge connection yet.
-		log.Printf("[DEBUG] Waiting 150s for EC2 boot and cloudflared to establish tunnel...")
+		// Poll SSH connectivity instead of a hard sleep. EC2 kernel boot takes
+		// ~30s, cloudflared download ~60s, tunnel edge connection ~30s — so the
+		// tunnel is typically reachable ~90s after tofu apply returns. We wait a
+		// minimum of 30s before the first probe (avoids wasting a cloudflared
+		// proxy spawn before sshd is even up) then poll every 10s up to 150s max.
+		log.Printf("[DEBUG] Polling SSH tunnel readiness (max 150s)...")
 		notify("Waiting for lab instance to be ready...", nil)
+
+		sshClient := labssh.NewClient()
+		pollTarget := labssh.Target{
+			Hostname:   tunnelHostname,
+			User:       labssh.DefaultUser(),
+			PrivateKey: sshPrivateKey,
+		}
+
+		const (
+			pollInitialWait = 30 * time.Second
+			pollInterval    = 10 * time.Second
+			pollMaxWait     = 150 * time.Second
+		)
+		pollStart := time.Now()
+
 		select {
-		case <-time.After(150 * time.Second):
+		case <-time.After(pollInitialWait):
 		case <-setupCtx.Done():
 			w.fail(args, fmt.Sprintf("Scenario setup cancelled during boot wait: %v", setupCtx.Err()))
 			return setupCtx.Err()
+		}
+
+		for {
+			elapsed := time.Since(pollStart)
+			probeCtx, probeCancel := context.WithTimeout(setupCtx, 15*time.Second)
+			err := sshClient.CheckTunnelReachable(probeCtx, pollTarget)
+			probeCancel()
+			if err == nil {
+				log.Printf("[DEBUG] Tunnel reachable after %.0fs", elapsed.Seconds())
+				break
+			}
+			if elapsed >= pollMaxWait {
+				log.Printf("[DEBUG] Tunnel not reachable after %.0fs, continuing anyway", elapsed.Seconds())
+				break
+			}
+			log.Printf("[DEBUG] Tunnel not ready (%.0fs elapsed): %v", elapsed.Seconds(), err)
+			select {
+			case <-time.After(pollInterval):
+			case <-setupCtx.Done():
+				w.fail(args, fmt.Sprintf("Scenario setup cancelled during tunnel poll: %v", setupCtx.Err()))
+				return setupCtx.Err()
+			}
 		}
 
 		maxAttempts := 8
