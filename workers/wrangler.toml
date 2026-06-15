@@ -1,0 +1,25 @@
+name = "devops-lab-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Durable Objects migrations (must be at root level)
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LabSession"]
+
+# R2 Bucket for storing terraform state
+[[r2_buckets]]
+binding = "TERRAFORM_STATE"
+bucket_name = "devops-lab-terraform-state"
+
+# Durable Objects configuration
+[[durable_objects.bindings]]
+name = "LAB_SESSION_NAMESPACE"
+class_name = "LabSession"
+
+# Environment variables
+[env.production]
+vars = { ENVIRONMENT = "production", API_URL = "https://api.devleep.com" }
+routes = [
+  { pattern = "api.devleep.com/*", zone_name = "devleep.com" }
+]
