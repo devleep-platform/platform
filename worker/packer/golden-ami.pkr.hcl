@@ -28,9 +28,6 @@ source "amazon-ebs" "golden" {
 
   ssh_username = "ubuntu"
 
-  # Make AMI public so student AWS accounts can launch it
-  ami_groups = ["all"]
-
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
     volume_size           = 20
