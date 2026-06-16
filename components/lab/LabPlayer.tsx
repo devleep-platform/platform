@@ -335,7 +335,7 @@ export default function LabPlayer({
 }: LabPlayerProps) {
   const router = useRouter();
   const { token } = useAuthStore();
-  const { instance, lab: storeLab, loading, error, endLab, initializeLab } = useLabStore();
+  const { instance, lab: storeLab, loading, error, endLab, initializeLab, updateValidationResults } = useLabStore();
 
   const lab = propLab || storeLab;
 
@@ -445,6 +445,7 @@ export default function LabPlayer({
     setIsValidating(true);
     setValidationError(null);
     setValidationQueued(false);
+    updateValidationResults([]);
     setIsBottomDrawerOpen(true);
     addActivity("Validation Run Triggered");
     try {

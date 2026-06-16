@@ -140,7 +140,9 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 	close(resultsChan)
 
 	var passCount, failCount int
+	var allResults []jobs.ValidationResult
 	for result := range resultsChan {
+		allResults = append(allResults, result)
 		if result.Status == "pass" {
 			passCount++
 		} else {
@@ -159,7 +161,7 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 	// Update session status in DB
 	if w.dbPool != nil {
 		var completedAt *time.Time
-		if dbStatus == "validated" {
+		if dbStatus == "completed" {
 			t := time.Now()
 			completedAt = &t
 		}
@@ -191,6 +193,7 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 			"passCount":   passCount,
 			"failCount":   failCount,
 			"totalChecks": len(checks),
+			"results":     allResults,
 		},
 	})
 

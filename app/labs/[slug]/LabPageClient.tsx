@@ -8,6 +8,7 @@ import type { Lab } from "@/lib/api/labs";
 import { startLab, getLabStatus, recoverLabSession } from "@/lib/api/provisioning";
 import { endEnvironment } from "@/lib/api/environments";
 import { useAuthStore } from "@/lib/store/auth-store";
+import { useLabStore } from "@/lib/store/lab-store";
 
 type LabConflictError = {
   error?: string;
@@ -137,10 +138,10 @@ export default function LabPageClient() {
     pollRef.current = pollSessionStatus;
   }, [pollSessionStatus]);
 
-  // Connect to Durable Object WebSocket during provisioning to receive real step events.
-  // The DO replays stored events on connect, so page refreshes during provisioning still work.
+  // Connect to Durable Object WebSocket during provisioning and while the lab is ready.
+  // The DO replays stored events on connect, so page refreshes work.
   useEffect(() => {
-    if (status !== "provisioning" || !sessionId || !websocketUrl) return;
+    if ((status !== "provisioning" && status !== "ready") || !sessionId || !websocketUrl) return;
 
     // websocketUrl is the DO HTTP base URL; convert to wss and append /ws/{sessionId}
     const wsUrl = websocketUrl.replace(/^https?/, "wss") + "/ws/" + sessionId;
@@ -151,18 +152,34 @@ export default function LabPageClient() {
       return; // polling is the fallback
     }
 
+    const isProvisioning = status === "provisioning";
+
     ws.onmessage = (evt) => {
       try {
         const event = JSON.parse(evt.data);
-        const { type, message, timestamp } = event;
+        const { type, message, timestamp, details } = event;
         if (type === "progress" || type === "complete" || type === "error" || type === "warning") {
-          setProvisioningEvents((prev) => [
-            ...prev,
-            { type, message, timestamp: timestamp ?? Date.now() },
-          ]);
-          // On complete, poll immediately to pick up terminalUrl and transition to ready
+          if (isProvisioning) {
+            setProvisioningEvents((prev) => [
+              ...prev,
+              { type, message, timestamp: timestamp ?? Date.now() },
+            ]);
+          }
           if (type === "complete") {
-            pollRef.current(sessionId);
+            if (details?.results && Array.isArray(details.results)) {
+              // Validation complete — transform shape to match frontend ValidationResult type
+              const mapped = details.results.map((r: any) => ({
+                id: r.checkId,
+                objectiveId: r.checkId,
+                label: r.message,
+                status: r.status === "pass" ? "passed" : r.status === "fail" ? "failed" : "pending",
+                message: r.message,
+              }));
+              useLabStore.getState().updateValidationResults(mapped);
+            } else if (isProvisioning) {
+              // Provisioning complete — poll to pick up terminalUrl and transition to ready
+              pollRef.current(sessionId);
+            }
           }
         }
       } catch {}
