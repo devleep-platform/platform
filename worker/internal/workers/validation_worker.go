@@ -148,9 +148,9 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 		}
 	}
 
-	// validated = all pass; active = some failed (student can retry)
+	// completed = all pass; active = some failed (student can retry)
 	finalStatus := "validated"
-	dbStatus := "validated"
+	dbStatus := "completed"
 	if failCount > 0 {
 		finalStatus = "failed"
 		dbStatus = "active"
