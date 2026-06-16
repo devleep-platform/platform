@@ -24,6 +24,7 @@ export interface ValidationJob {
   outputsMapping: Record<string, string>;      // JSONB from lab_definitions.outputs_mapping
   terraformOutputs: Record<string, any>;       // From lab_sessions.terraform_outputs
   sshHostname?: string;      // Cloudflare tunnel hostname for SSH checks
+  environmentId?: string;   // lab_environments.id — used to fetch SSH key in worker
   timestamp: number;
 }
 

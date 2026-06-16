@@ -158,6 +158,7 @@ export async function publishValidationJob(job: ValidationJob): Promise<string> 
     outputsMapping: job.outputsMapping,
     terraformOutputs: job.terraformOutputs,
     sshHostname: job.sshHostname ?? "",
+    environmentId: job.environmentId ?? "",
     timestamp: job.timestamp,
   });
   return jobId;

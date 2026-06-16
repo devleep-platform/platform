@@ -87,10 +87,16 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 		}
 	}
 
-	// Extract ssh_private_key from terraform outputs if not already set
-	if args.SSHPrivateKey == "" {
-		if key, ok := args.TerraformOutputs["ssh_private_key"].(string); ok && key != "" {
+	// Fetch SSH private key from lab_environments.terraform_outputs
+	if args.SSHPrivateKey == "" && args.EnvironmentID != "" && w.dbPool != nil {
+		key, err := getEnvironmentSSHKey(ctx, w.dbPool, args.EnvironmentID)
+		if err != nil {
+			log.Printf("Warning: could not fetch SSH key for env %s: %v", args.EnvironmentID, err)
+		} else if key != "" {
 			args.SSHPrivateKey = key
+			log.Printf("[DEBUG] SSH private key loaded for env %s (%d bytes)", args.EnvironmentID, len(key))
+		} else {
+			log.Printf("[WARNING] SSH private key not found for env %s", args.EnvironmentID)
 		}
 	}
 

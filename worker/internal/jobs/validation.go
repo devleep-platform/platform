@@ -16,6 +16,7 @@ type ValidationArgs struct {
 	SSHHostname      string                 `json:"sshHostname,omitempty"`
 	SSHUser          string                 `json:"sshUser,omitempty"`
 	SSHPrivateKey    string                 `json:"sshPrivateKey,omitempty"`
+	EnvironmentID    string                 `json:"environmentId,omitempty"`
 }
 
 // Kind implements river.Job interface
