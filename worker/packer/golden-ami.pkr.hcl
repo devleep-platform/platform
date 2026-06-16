@@ -27,6 +27,7 @@ source "amazon-ebs" "golden" {
   }
 
   ssh_username = "ubuntu"
+  ami_groups   = ["all"]
 
   launch_block_device_mappings {
     device_name           = "/dev/sda1"

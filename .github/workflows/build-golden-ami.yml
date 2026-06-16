@@ -34,6 +34,9 @@ jobs:
         with:
           version: "1.11.0"
 
+      - name: Enable public AMI sharing
+        run: aws ec2 disable-image-block-public-access --region ${{ env.REGION }}
+
       - name: Packer init
         run: packer init worker/packer/golden-ami.pkr.hcl
 
