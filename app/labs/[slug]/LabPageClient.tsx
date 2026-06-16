@@ -39,6 +39,7 @@ export default function LabPageClient() {
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
   const [sessionTimeoutAt, setSessionTimeoutAt] = useState<string | null>(null);
   const [websocketUrl, setWebsocketUrl] = useState<string | null>(null);
+  const [doUrl, setDoUrl] = useState<string | null>(null); // DO base URL — never overwritten by terminal URL
   const [sshHostname, setSshHostname] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "provisioning" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export default function LabPageClient() {
           setError("Your session has expired. Please start a new lab.");
           setStatus("error");
           localStorage.removeItem(`lab-session-${slug}`);
+          localStorage.removeItem(`lab-do-url-${slug}`);
           return;
         }
         pollCount++;
@@ -110,6 +112,7 @@ export default function LabPageClient() {
         setError("Your session has expired. Please start a new lab.");
         setStatus("error");
         localStorage.removeItem(`lab-session-${slug}`);
+        localStorage.removeItem(`lab-do-url-${slug}`);
         return;
       }
 
@@ -141,10 +144,10 @@ export default function LabPageClient() {
   // Connect to Durable Object WebSocket during provisioning and while the lab is ready.
   // The DO replays stored events on connect, so page refreshes work.
   useEffect(() => {
-    if ((status !== "provisioning" && status !== "ready") || !sessionId || !websocketUrl) return;
+    if ((status !== "provisioning" && status !== "ready") || !sessionId || !doUrl) return;
 
-    // websocketUrl is the DO HTTP base URL; convert to wss and append /ws/{sessionId}
-    const wsUrl = websocketUrl.replace(/^https?/, "wss") + "/ws/" + sessionId;
+    // doUrl is the DO HTTP base URL; convert to wss and append /ws/{sessionId}
+    const wsUrl = doUrl.replace(/^https?/, "wss") + "/ws/" + sessionId;
     let ws: WebSocket;
     try {
       ws = new WebSocket(wsUrl);
@@ -192,16 +195,19 @@ export default function LabPageClient() {
         ws.close();
       }
     };
-  }, [status, sessionId, websocketUrl]);
+  }, [status, sessionId, doUrl]);
 
   useEffect(() => {
     async function recoverSession() {
       const storedSessionId = localStorage.getItem(`lab-session-${slug}`);
       if (storedSessionId) {
         setSessionId(storedSessionId);
+        const storedDoUrl = localStorage.getItem(`lab-do-url-${slug}`);
+        if (storedDoUrl) setDoUrl(storedDoUrl);
         const { data: quickStatus, error: quickErr } = await getLabStatus(storedSessionId);
         if (quickErr?.status === 410 || quickStatus?.status === "destroyed") {
           localStorage.removeItem(`lab-session-${slug}`);
+          localStorage.removeItem(`lab-do-url-${slug}`);
           return;
         }
         if (quickStatus?.status === "active") {
@@ -233,9 +239,11 @@ export default function LabPageClient() {
       setSessionStartedAt(data.createdAt || null);
       setSessionTimeoutAt(data.timeoutAt || null);
       setWebsocketUrl(data.terminalUrl || data.websocketUrl);
+      if (data.websocketUrl) setDoUrl(data.websocketUrl);
       setSshHostname(data.sshHostname || null);
 
       localStorage.setItem(`lab-session-${slug}`, data.sessionId);
+      if (data.websocketUrl) localStorage.setItem(`lab-do-url-${slug}`, data.websocketUrl);
 
       if (data.status === "active") {
         setStatus("ready");
@@ -296,6 +304,7 @@ export default function LabPageClient() {
     }
 
     localStorage.setItem(`lab-session-${slug}`, data.sessionId);
+    localStorage.setItem(`lab-do-url-${slug}`, data.websocketUrl);
 
     setSessionId(data.sessionId);
     setEnvironmentId(data.environmentId);
@@ -304,6 +313,7 @@ export default function LabPageClient() {
     setSessionStartedAt(data.createdAt || new Date().toISOString());
     setSessionTimeoutAt(data.timeoutAt || null);
     setWebsocketUrl(data.websocketUrl);
+    setDoUrl(data.websocketUrl);
     setSshHostname(data.sshHostname || null);
     pollSessionStatus(data.sessionId);
   };
@@ -312,6 +322,7 @@ export default function LabPageClient() {
     if (!environmentId) return;
     setEndingEnv(true);
     localStorage.removeItem(`lab-session-${slug}`);
+    localStorage.removeItem(`lab-do-url-${slug}`);
     await endEnvironment(environmentId);
     setEndingEnv(false);
     router.push("/catalog");
