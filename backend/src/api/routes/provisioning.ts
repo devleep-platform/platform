@@ -374,7 +374,7 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
 
         const result = await query(
           `SELECT ls.id, ls.lab_id, ls.status, ls.environment_id, ls.created_at, ls.completed_at,
-                  ls.terminal_token, ls.timeout_at,
+                  ls.terminal_token, ls.timeout_at, ls.durable_object_id,
                   le.expires_at, le.terraform_module, le.tunnel_hostname, le.status AS environment_status
            FROM lab_sessions ls
            LEFT JOIN lab_environments le ON le.id = ls.environment_id
@@ -407,6 +407,9 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
         if (sessionData.tunnel_hostname && sessionData.terminal_token) {
           response.terminalUrl = `wss://${sessionData.tunnel_hostname}/ws`;
           response.terminalToken = sessionData.terminal_token;
+        }
+        if (sessionData.durable_object_id) {
+          response.websocketUrl = `${process.env.DURABLE_OBJECT_URL}/labs/${sessionData.durable_object_id}`;
         }
 
         return reply.send(response);

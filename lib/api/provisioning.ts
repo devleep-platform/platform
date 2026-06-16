@@ -29,6 +29,7 @@ export interface SessionStatusResponse {
   timeout_at?: string;
   terminalUrl?: string;
   terminalToken?: string;
+  websocketUrl?: string;
   tunnel_hostname?: string;
   terminal_token?: string;
   statusCode?: string;

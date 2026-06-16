@@ -104,6 +104,10 @@ export default function LabPageClient() {
       if (data.status === "active") {
         if (data.terminalUrl) setWebsocketUrl(data.terminalUrl);
         if (data.tunnel_hostname) setSshHostname(data.tunnel_hostname);
+        if (data.websocketUrl) {
+          setDoUrl(data.websocketUrl);
+          localStorage.setItem(`lab-do-url-${slug}`, data.websocketUrl);
+        }
         setStatus("ready");
         return;
       }
@@ -213,6 +217,10 @@ export default function LabPageClient() {
         if (quickStatus?.status === "active") {
           if (quickStatus.terminalUrl) setWebsocketUrl(quickStatus.terminalUrl);
           if (quickStatus.tunnel_hostname) setSshHostname(quickStatus.tunnel_hostname);
+          if (quickStatus.websocketUrl) {
+            setDoUrl(quickStatus.websocketUrl);
+            localStorage.setItem(`lab-do-url-${slug}`, quickStatus.websocketUrl);
+          }
           setStatus("ready");
         } else {
           setStatus("provisioning");
