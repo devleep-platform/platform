@@ -81,7 +81,7 @@ func main() {
 	provisionWorker := workers.NewProvisionWorker(durableObjectURL, awsRegion)
 	provisionEnvWorker := workers.NewProvisionEnvironmentWorker(dbPool, durableObjectURL)
 	switchScenarioWorker := workers.NewSwitchScenarioWorker(dbPool, durableObjectURL)
-	validationWorker := workers.NewValidationWorker(durableObjectURL, nil)
+	validationWorker := workers.NewValidationWorker(durableObjectURL, nil, dbPool)
 	teardownWorker := workers.NewTeardownWorker(dbPool, durableObjectURL)
 	teardownEnvWorker := workers.NewTeardownEnvironmentWorker(dbPool, durableObjectURL)
 	expireEnvWorker := workers.NewExpireEnvironmentWorker(dbPool)

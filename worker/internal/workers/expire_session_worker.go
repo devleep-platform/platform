@@ -31,7 +31,7 @@ func (w *ExpireSessionWorker) Work(ctx context.Context, job *river.Job[jobs.Expi
 		return err
 	}
 
-	if status != "active" && status != "provisioning" && status != "scenario_switching" {
+	if status != "active" && status != "provisioning" && status != "scenario_switching" && status != "validating" {
 		log.Printf("session %s already %s, skip expire", args.SessionID, status)
 		return nil
 	}

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"devops-lab/worker/internal/jobs"
 	"devops-lab/worker/internal/labssh"
@@ -28,10 +29,11 @@ type ValidationWorker struct {
 	maxConcurrentChecks int
 	checkTimeout        time.Duration
 	riverClient         *river.Client[pgx.Tx]
+	dbPool              *pgxpool.Pool
 }
 
 // NewValidationWorker creates a new validation worker
-func NewValidationWorker(durableObjectURL string, riverClient *river.Client[pgx.Tx]) *ValidationWorker {
+func NewValidationWorker(durableObjectURL string, riverClient *river.Client[pgx.Tx], dbPool *pgxpool.Pool) *ValidationWorker {
 	return &ValidationWorker{
 		durableObjectURL:    durableObjectURL,
 		httpClient:          &http.Client{Timeout: 30 * time.Second},
@@ -39,6 +41,7 @@ func NewValidationWorker(durableObjectURL string, riverClient *river.Client[pgx.
 		maxConcurrentChecks: 20,
 		checkTimeout:        15 * time.Second,
 		riverClient:         riverClient,
+		dbPool:              dbPool,
 	}
 }
 
@@ -139,9 +142,38 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 		}
 	}
 
+	// validated = all pass; active = some failed (student can retry)
 	finalStatus := "validated"
+	dbStatus := "validated"
 	if failCount > 0 {
 		finalStatus = "failed"
+		dbStatus = "active"
+	}
+
+	// Update session status in DB
+	if w.dbPool != nil {
+		var completedAt *time.Time
+		if dbStatus == "validated" {
+			t := time.Now()
+			completedAt = &t
+		}
+		if completedAt != nil {
+			_, err := w.dbPool.Exec(ctx,
+				`UPDATE lab_sessions SET status = $1, completed_at = $2 WHERE id = $3`,
+				dbStatus, *completedAt, args.SessionID,
+			)
+			if err != nil {
+				log.Printf("Warning: failed to update session status: %v", err)
+			}
+		} else {
+			_, err := w.dbPool.Exec(ctx,
+				`UPDATE lab_sessions SET status = $1 WHERE id = $2`,
+				dbStatus, args.SessionID,
+			)
+			if err != nil {
+				log.Printf("Warning: failed to update session status: %v", err)
+			}
+		}
 	}
 
 	w.notifyDurableObject(args.SessionID, args.DurableObjectID, map[string]interface{}{
@@ -155,9 +187,6 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 			"totalChecks": len(checks),
 		},
 	})
-
-	// Session completion does not tear down the environment — infrastructure persists
-	// until explicit end, environment expiry, or track completion.
 
 	log.Printf("✓ Validation job completed: %s (Status: %s, Pass: %d, Fail: %d)", args.JobID, finalStatus, passCount, failCount)
 
