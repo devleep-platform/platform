@@ -2,7 +2,7 @@
   "id": "docker-missing-env",
   "name": "Missing Environment Variables",
   "description": "A Python API container exits immediately because DB_HOST, DB_PORT, and APP_SECRET are not set. The app prints which vars are missing to stderr. Student must read the logs, identify the missing vars, and re-run the container with correct -e flags.",
-  "compatible_modules": ["labs/docker-ec2"],
+  "compatible_modules": ["labs/linux-ec2"],
   "setup_timeout_seconds": 120,
   "tags": ["docker", "environment-variables", "configuration", "debugging"]
 }

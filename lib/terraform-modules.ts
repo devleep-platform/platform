@@ -11,12 +11,7 @@ export const TERRAFORM_MODULES: Record<string, TerraformModuleInfo> = {
     id: "labs/linux-ec2",
     label: "Linux Environment",
     description:
-      "Ubuntu EC2 in an isolated VPC. Multiple Linux labs share one environment for the day (~25s switch between labs).",
-  },
-  "labs/docker-ec2": {
-    id: "labs/docker-ec2",
-    label: "Docker Environment",
-    description: "EC2 with Docker for container deployment and CI/CD style labs.",
+      "Ubuntu EC2 with Docker pre-installed. Multiple labs share one environment for the day (~25s switch between labs).",
   },
   "labs/kubernetes-eks": {
     id: "labs/kubernetes-eks",

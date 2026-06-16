@@ -2,7 +2,7 @@
   "id": "docker-base",
   "name": "Docker Environment Baseline",
   "description": "A clean Docker instance with a running nginx container. Nothing is broken. Used for Container Orientation — student explores docker ps, inspect, logs, and ports.",
-  "compatible_modules": ["labs/docker-ec2"],
+  "compatible_modules": ["labs/linux-ec2"],
   "setup_timeout_seconds": 60,
   "tags": ["docker", "orientation", "fundamentals", "containers"]
 }
