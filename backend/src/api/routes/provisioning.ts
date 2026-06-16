@@ -456,9 +456,11 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
         const result = await query(
           `SELECT ls.id, ls.lab_id, ls.status, ls.durable_object_id,
                   ls.terraform_outputs,
-                  ld.content, ld.outputs_mapping
+                  ld.content, ld.outputs_mapping,
+                  le.tunnel_hostname
            FROM lab_sessions ls
            JOIN lab_definitions ld ON ld.id = ls.lab_id
+           LEFT JOIN lab_environments le ON le.id = ls.environment_id
            WHERE ls.id = $1 AND ls.user_id = $2`,
           [sessionId, userId]
         );
@@ -488,6 +490,7 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
           labContent: session.content,
           outputsMapping: session.outputs_mapping ?? {},
           terraformOutputs: session.terraform_outputs ?? {},
+          sshHostname: session.tunnel_hostname ?? undefined,
           timestamp: Date.now(),
         });
 

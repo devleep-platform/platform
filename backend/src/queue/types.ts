@@ -23,6 +23,7 @@ export interface ValidationJob {
   labContent: any;           // JSONB from lab_definitions.content
   outputsMapping: Record<string, string>;      // JSONB from lab_definitions.outputs_mapping
   terraformOutputs: Record<string, any>;       // From lab_sessions.terraform_outputs
+  sshHostname?: string;      // Cloudflare tunnel hostname for SSH checks
   timestamp: number;
 }
 

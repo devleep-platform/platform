@@ -58,6 +58,16 @@ func (w *ValidationWorker) NextRetry(job *river.Job[jobs.ValidationArgs]) time.T
 	return time.Now().Add(time.Duration(backoffSeconds) * time.Second)
 }
 
+type labContentValidation struct {
+	Strategy               string                 `json:"strategy"`
+	DefaultTimeoutSeconds  int                    `json:"default_timeout_seconds"`
+	Checks                 []jobs.ValidationCheck `json:"checks"`
+}
+
+type labContent struct {
+	Validation labContentValidation `json:"validation"`
+}
+
 func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationArgs) error {
 	log.Printf("Processing validation job: %s for session %s", args.JobID, args.SessionID)
 
@@ -67,27 +77,38 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 		"timestamp": time.Now().UnixMilli(),
 	})
 
-	// TODO: Load validation config from Cloudflare R2
-	checks := []jobs.ValidationCheck{
-		{
-			ID:   "vpc-exists",
-			Type: "terraform_output",
-			Name: "VPC Created",
-			Path: "vpc_id",
-		},
-		{
-			ID:   "ec2-running",
-			Type: "http",
-			Name: "EC2 Instance Running",
-			URL:  "http://10.0.1.10:80/health",
-		},
-		{
-			ID:   "tunnel-connected",
-			Type: "ssh",
-			Name: "Tunnel Agent Connected",
-			Cmd:  "systemctl is-active cloudflare-tunnel",
-		},
+	var content labContent
+	if len(args.LabContent) > 0 {
+		if err := json.Unmarshal(args.LabContent, &content); err != nil {
+			log.Printf("Warning: failed to parse lab content: %v", err)
+		}
 	}
+
+	// Extract ssh_private_key from terraform outputs if not already set
+	if args.SSHPrivateKey == "" {
+		if key, ok := args.TerraformOutputs["ssh_private_key"].(string); ok && key != "" {
+			args.SSHPrivateKey = key
+		}
+	}
+
+	checks := content.Validation.Checks
+	if len(checks) == 0 {
+		log.Printf("Warning: no validation checks found in lab content for job %s", args.JobID)
+		w.notifyDurableObject(args.SessionID, args.DurableObjectID, map[string]interface{}{
+			"type":      "complete",
+			"message":   "No validation checks defined for this lab",
+			"timestamp": time.Now().UnixMilli(),
+			"details": map[string]interface{}{
+				"status":      "failed",
+				"passCount":   0,
+				"failCount":   0,
+				"totalChecks": 0,
+			},
+		})
+		return nil
+	}
+
+	log.Printf("Running %d validation checks from lab content", len(checks))
 
 	semaphore := make(chan struct{}, w.maxConcurrentChecks)
 
