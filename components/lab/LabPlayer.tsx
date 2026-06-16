@@ -357,6 +357,8 @@ export default function LabPlayer({
   const [isValidating, setIsValidating] = useState(false);
   const [validationQueued, setValidationQueued] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [completionCountdown, setCompletionCountdown] = useState<number | null>(null);
+  const [completionDismissed, setCompletionDismissed] = useState(false);
 
   const togglePanel = (panel: string) => {
     setExpandedPanels(prev =>
@@ -424,6 +426,7 @@ export default function LabPlayer({
         await endLab(token);
       }
       localStorage.removeItem(`lab-session-${labSlug}`);
+      localStorage.removeItem(`lab-do-url-${labSlug}`);
       setLabEnded(true);
       router.push("/catalog");
     } catch (err) {
@@ -471,6 +474,35 @@ export default function LabPlayer({
         : [];
 
   const validationChecks = lab?.content?.validation?.checks || [];
+  const allPassed =
+    validationChecks.length > 0 &&
+    allValidationResults.length === validationChecks.length &&
+    allValidationResults.every((r) => r.status === "passed");
+
+  // Start 5-second countdown when all checks pass
+  useEffect(() => {
+    if (!allPassed || completionDismissed) return;
+    setCompletionCountdown(5);
+    const id = window.setInterval(() => {
+      setCompletionCountdown((n) => {
+        if (n === null || n <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [allPassed, completionDismissed]);
+
+  // Auto-navigate when countdown hits 0
+  useEffect(() => {
+    if (completionCountdown === 0 && !completionDismissed) {
+      localStorage.removeItem(`lab-session-${labSlug}`);
+      localStorage.removeItem(`lab-do-url-${labSlug}`);
+      router.push("/catalog");
+    }
+  }, [completionCountdown, completionDismissed, labSlug, router]);
 
   if (loading && !sessionId) {
     return (
@@ -521,6 +553,52 @@ export default function LabPlayer({
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#070B11] text-white font-sans">
+
+      {/* COMPLETION OVERLAY */}
+      {allPassed && !completionDismissed && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#070B11]/95 backdrop-blur-sm">
+          <div className="w-full max-w-lg mx-6 border border-[#22C55E]/30 bg-[#0a1a0f] p-8 font-mono">
+            <div className="flex items-center gap-3 mb-6">
+              <CheckCircle2 className="text-[#22C55E] shrink-0" size={28} />
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-[#22C55E] mb-0.5">Incident Resolved</div>
+                <div className="text-xl font-bold text-white">{lab?.title}</div>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-6">
+              {allValidationResults.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 text-xs">
+                  <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
+                  <span className="text-slate-300">{formatCheckId(r.id)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-[#1E293B] pt-5 flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  localStorage.removeItem(`lab-session-${labSlug}`);
+                  localStorage.removeItem(`lab-do-url-${labSlug}`);
+                  router.push("/catalog");
+                }}
+                className="w-full bg-[#22C55E] text-[#070B11] text-xs font-bold uppercase tracking-widest py-3 hover:bg-[#16a34a] transition-colors"
+              >
+                Return to Catalog
+                {completionCountdown !== null && completionCountdown > 0 && (
+                  <span className="ml-2 opacity-70">({completionCountdown}s)</span>
+                )}
+              </button>
+              <button
+                onClick={() => setCompletionDismissed(true)}
+                className="w-full border border-[#1E293B] text-slate-400 text-xs uppercase tracking-widest py-2.5 hover:border-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Keep Exploring
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* INCIDENT HEADER */}
       <div className="h-14 bg-[#0F172A] border-b border-[#1E293B] px-4 flex items-center justify-between shrink-0 z-20">
