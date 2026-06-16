@@ -50,6 +50,7 @@ interface LabPlayerProps {
   loadingProgress?: number;
   provisioningEvents?: Array<{ type: string; message: string; timestamp: number }>;
   onStartLab?: () => void;
+  validationResults?: ValidationResult[];
 }
 
 const DIFFICULTY_STYLES: Record<string, string> = {
@@ -332,10 +333,11 @@ export default function LabPlayer({
   loadingProgress,
   provisioningEvents,
   onStartLab,
+  validationResults: propValidationResults,
 }: LabPlayerProps) {
   const router = useRouter();
   const { token } = useAuthStore();
-  const { instance, lab: storeLab, loading, error, endLab, initializeLab, updateValidationResults } = useLabStore();
+  const { instance, lab: storeLab, loading, error, endLab, initializeLab } = useLabStore();
 
   const lab = propLab || storeLab;
 
@@ -445,7 +447,6 @@ export default function LabPlayer({
     setIsValidating(true);
     setValidationError(null);
     setValidationQueued(false);
-    updateValidationResults([]);
     setIsBottomDrawerOpen(true);
     addActivity("Validation Run Triggered");
     try {
@@ -462,9 +463,12 @@ export default function LabPlayer({
     }
   };
 
-  const allValidationResults: ValidationResult[] = instance?.validationResults?.length
-    ? instance.validationResults
-    : [];
+  const allValidationResults: ValidationResult[] =
+    propValidationResults?.length
+      ? propValidationResults
+      : instance?.validationResults?.length
+        ? instance.validationResults
+        : [];
 
   const validationChecks = lab?.content?.validation?.checks || [];
 

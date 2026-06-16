@@ -8,7 +8,7 @@ import type { Lab } from "@/lib/api/labs";
 import { startLab, getLabStatus, recoverLabSession } from "@/lib/api/provisioning";
 import { endEnvironment } from "@/lib/api/environments";
 import { useAuthStore } from "@/lib/store/auth-store";
-import { useLabStore } from "@/lib/store/lab-store";
+import type { ValidationResult } from "@/lib/types";
 
 type LabConflictError = {
   error?: string;
@@ -44,6 +44,7 @@ export default function LabPageClient() {
   const [status, setStatus] = useState<"idle" | "provisioning" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [endingEnv, setEndingEnv] = useState(false);
+  const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [provisioningEvents, setProvisioningEvents] = useState<
     Array<{ type: string; message: string; timestamp: number }>
   >([]);
@@ -182,7 +183,7 @@ export default function LabPageClient() {
                 status: r.status === "pass" ? "passed" : r.status === "fail" ? "failed" : "pending",
                 message: r.message,
               }));
-              useLabStore.getState().updateValidationResults(mapped);
+              setValidationResults(mapped);
             } else if (isProvisioning) {
               // Provisioning complete — poll to pick up terminalUrl and transition to ready
               pollRef.current(sessionId);
@@ -382,6 +383,7 @@ export default function LabPageClient() {
           loadingProgress={loadingProgress}
           provisioningEvents={provisioningEvents}
           onStartLab={handleStartLab}
+          validationResults={validationResults}
         />
       )}
     </div>
