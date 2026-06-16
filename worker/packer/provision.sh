@@ -12,7 +12,7 @@ cloud-init status --wait || true
 echo "[$(date)] Installing base packages..."
 sudo apt-get update -y
 sudo apt-get install -y --no-install-recommends \
-  curl wget git vim nano htop net-tools jq python3 python3-pip gcc \
+  curl wget git vim nano htop net-tools jq python3 python3-pip gcc libc6-dev \
   ca-certificates gnupg lsb-release
 echo "[$(date)] ✓ Base packages installed"
 
