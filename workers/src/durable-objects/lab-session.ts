@@ -239,18 +239,20 @@ export class LabSession {
         details: event.details,
       });
 
-      console.log(`📡 Broadcasting to ${this.websockets.size} connected clients`);
+      // Use getWebSockets() — survives DO hibernation unlike the in-memory Set
+      const allWs = this.state.getWebSockets();
+      console.log(`📡 Broadcasting to ${allWs.length} connected clients`);
 
       let successCount = 0;
       const failedSockets: WebSocket[] = [];
 
-      for (const ws of this.websockets) {
+      for (const ws of allWs) {
         try {
           ws.send(broadcastMessage);
           successCount++;
         } catch (error) {
           console.error("Failed to send to WebSocket:", error);
-          failedSockets.push(ws);
+          failedSockets.push(ws as WebSocket);
         }
       }
 
@@ -280,6 +282,26 @@ export class LabSession {
         headers: { "Content-Type": "application/json" },
       });
     }
+  }
+
+  // Hibernation API handlers — called by CF runtime when DO wakes up for a WS event
+  async webSocketMessage(ws: any, message: string) {
+    try {
+      const data = JSON.parse(message);
+      if (data.type === "ping") {
+        ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+      }
+    } catch {}
+  }
+
+  async webSocketClose(ws: any, code: number, reason: string) {
+    this.websockets.delete(ws);
+    console.log(`❌ WS closed (hibernation handler): code=${code}`);
+  }
+
+  async webSocketError(ws: any, error: any) {
+    this.websockets.delete(ws);
+    console.error("🔴 WS error (hibernation handler):", error);
   }
 
   /**
