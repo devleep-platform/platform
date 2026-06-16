@@ -54,17 +54,40 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 sudo systemctl enable docker
 sudo systemctl start docker
 sudo usermod -aG docker ubuntu
-echo "[$(date)] ✓ Docker CE installed"
+
+# Wait for Docker daemon to be ready before pulling
+echo "[$(date)] Waiting for Docker daemon..."
+for i in $(seq 1 30); do
+  sudo docker info >/dev/null 2>&1 && break
+  echo "[$(date)] Docker not ready yet (attempt $i/30)..."
+  sleep 2
+done
+sudo docker info >/dev/null 2>&1 || { echo "[$(date)] ERROR: Docker daemon failed to start"; exit 1; }
+echo "[$(date)] ✓ Docker CE installed and daemon ready"
 
 # ============================================================
 # Pre-pull Docker images used by labs
 # ============================================================
+docker_pull_with_retry() {
+  local image="$1"
+  for attempt in 1 2 3; do
+    if sudo docker pull "$image"; then
+      echo "[$(date)] ✓ $image"
+      return 0
+    fi
+    echo "[$(date)] Pull $image attempt $attempt/3 failed, retrying..."
+    sleep 10
+  done
+  echo "[$(date)] ERROR: Failed to pull $image after 3 attempts"
+  return 1
+}
+
 echo "[$(date)] Pre-pulling Docker images..."
-sudo docker pull nginx:latest       && echo "[$(date)] ✓ nginx:latest"
-sudo docker pull nginx:1.24         && echo "[$(date)] ✓ nginx:1.24"
-sudo docker pull nginx:1.20         && echo "[$(date)] ✓ nginx:1.20"
-sudo docker pull alpine:latest      && echo "[$(date)] ✓ alpine:latest"
-sudo docker pull python:3.11-alpine && echo "[$(date)] ✓ python:3.11-alpine"
+docker_pull_with_retry nginx:latest
+docker_pull_with_retry nginx:1.24
+docker_pull_with_retry nginx:1.20
+docker_pull_with_retry alpine:latest
+docker_pull_with_retry python:3.11-alpine
 echo "[$(date)] ✓ Image pre-pull complete"
 
 # ============================================================
