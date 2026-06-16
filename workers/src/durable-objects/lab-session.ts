@@ -62,6 +62,12 @@ export class LabSession {
       return this.getStatus();
     }
 
+    // Events fetch endpoint — polling fallback for validation results
+    if (method === "GET" && pathname.match(/^\/events\//)) {
+      const sessionId = pathname.split("/").pop() || "";
+      return this.getEvents(sessionId);
+    }
+
     // Log unknown requests (likely hibernation system events)
     console.log(`⚠️ Unhandled request: ${method} ${pathname}`);
     return new Response("Not Found", { status: 404 });
@@ -302,6 +308,26 @@ export class LabSession {
   async webSocketError(ws: any, error: any) {
     this.websockets.delete(ws);
     console.error("🔴 WS error (hibernation handler):", error);
+  }
+
+  /**
+   * Return stored events for a session — polling fallback so frontend can
+   * fetch results even if the WebSocket delivery was missed.
+   */
+  private async getEvents(sessionId: string): Promise<Response> {
+    try {
+      const stored = await this.state.storage?.get(`events:${sessionId}`);
+      const events: SessionEvent[] = stored ? JSON.parse(stored as string) : [];
+      return new Response(JSON.stringify({ events }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ events: [], error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
   }
 
   /**

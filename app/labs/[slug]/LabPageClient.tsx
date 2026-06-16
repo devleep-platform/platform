@@ -102,7 +102,7 @@ export default function LabPageClient() {
       if (data.created_at) setSessionStartedAt(data.created_at);
       if (data.timeout_at) setSessionTimeoutAt(data.timeout_at);
 
-      if (data.status === "active") {
+      if (data.status === "active" || data.status === "completed") {
         if (data.terminalUrl) setWebsocketUrl(data.terminalUrl);
         if (data.tunnel_hostname) setSshHostname(data.tunnel_hostname);
         if (data.websocketUrl) {
@@ -215,7 +215,7 @@ export default function LabPageClient() {
           localStorage.removeItem(`lab-do-url-${slug}`);
           return;
         }
-        if (quickStatus?.status === "active") {
+        if (quickStatus?.status === "active" || quickStatus?.status === "completed") {
           if (quickStatus.terminalUrl) setWebsocketUrl(quickStatus.terminalUrl);
           if (quickStatus.tunnel_hostname) setSshHostname(quickStatus.tunnel_hostname);
           if (quickStatus.websocketUrl) {
@@ -384,6 +384,8 @@ export default function LabPageClient() {
           provisioningEvents={provisioningEvents}
           onStartLab={handleStartLab}
           validationResults={validationResults}
+          doUrl={doUrl}
+          onValidationResults={setValidationResults}
         />
       )}
     </div>

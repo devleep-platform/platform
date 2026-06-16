@@ -51,6 +51,8 @@ interface LabPlayerProps {
   provisioningEvents?: Array<{ type: string; message: string; timestamp: number }>;
   onStartLab?: () => void;
   validationResults?: ValidationResult[];
+  doUrl?: string | null;
+  onValidationResults?: (results: ValidationResult[]) => void;
 }
 
 const DIFFICULTY_STYLES: Record<string, string> = {
@@ -334,6 +336,8 @@ export default function LabPlayer({
   provisioningEvents,
   onStartLab,
   validationResults: propValidationResults,
+  doUrl,
+  onValidationResults,
 }: LabPlayerProps) {
   const router = useRouter();
   const { token } = useAuthStore();
@@ -457,6 +461,40 @@ export default function LabPlayer({
       if (apiError) throw new Error(apiError.error);
       setValidationQueued(true);
       addActivity("Validation Queued — awaiting results");
+
+      // Poll DO events endpoint as fallback in case WebSocket delivery is missed
+      if (doUrl && sid) {
+        const eventsUrl = doUrl.replace(/\/$/, "") + "/events/" + sid;
+        let attempts = 0;
+        const maxAttempts = 20; // 20 × 3s = 60s max
+        const poll = async () => {
+          try {
+            const resp = await fetch(eventsUrl);
+            if (resp.ok) {
+              const { events } = await resp.json();
+              const completeEvent = (events as any[]).findLast?.(
+                (e: any) => e.type === "complete" && Array.isArray(e.details?.results)
+              ) ?? [...(events as any[])].reverse().find(
+                (e: any) => e.type === "complete" && Array.isArray(e.details?.results)
+              );
+              if (completeEvent) {
+                const mapped: ValidationResult[] = completeEvent.details.results.map((r: any) => ({
+                  id: r.checkId,
+                  objectiveId: r.checkId,
+                  label: r.message,
+                  status: r.status === "pass" ? "passed" : r.status === "fail" ? "failed" : "pending",
+                  message: r.message,
+                }));
+                onValidationResults?.(mapped);
+                return; // done
+              }
+            }
+          } catch {}
+          attempts++;
+          if (attempts < maxAttempts) setTimeout(poll, 3000);
+        };
+        setTimeout(poll, 4000); // first check after 4s (worker typically takes 3-5s)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to queue validation";
       setValidationError(msg);

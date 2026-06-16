@@ -474,7 +474,7 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
 
         const session = result.rows[0];
 
-        if (session.status !== "active") {
+        if (session.status !== "active" && session.status !== "completed") {
           return reply.status(400).send({
             error: `Cannot validate a session in '${session.status}' state`,
           });
