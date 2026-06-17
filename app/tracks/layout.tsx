@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Training Tracks",
-  description: "Structured learning tracks grouping labs by environment and skill progression.",
-  robots: { index: false, follow: false },
+  title: "DevOps Learning Tracks",
+  description: "Structured DevOps learning paths — master Linux, Docker, Kubernetes, AWS, and CI/CD through hands-on incident labs on real infrastructure.",
+  openGraph: { title: "DevOps Learning Tracks | Devleep", url: "https://devleep.com/tracks" },
 };
 
 export default function TracksLayout({ children }: { children: React.ReactNode }) {

@@ -3,14 +3,14 @@ Allow: /
 Allow: /about
 Allow: /community
 Allow: /docs
+Allow: /security
 Allow: /privacy
 Allow: /terms
-Allow: /security
+Allow: /catalog
+Allow: /tracks
+Allow: /labs/
 
 Disallow: /dashboard
-Disallow: /catalog
-Disallow: /tracks
-Disallow: /labs/
 Disallow: /settings
 Disallow: /connect-cloud
 Disallow: /auth/

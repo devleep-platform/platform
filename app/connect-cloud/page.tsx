@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { DarkAppShell } from "@/components/layout/DarkAppShell";
 import { CloudConnectWizard } from "@/components/lab/CloudConnectWizard";
+
+export const metadata: Metadata = {
+  title: "Connect Cloud Account",
+  robots: { index: false, follow: false },
+};
 
 export default function CloudConnectPage() {
   return (
