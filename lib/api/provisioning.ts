@@ -33,6 +33,7 @@ export interface SessionStatusResponse {
   tunnel_hostname?: string;
   terminal_token?: string;
   statusCode?: string;
+  validation_results?: Array<{ checkId: string; status: string; message: string }>;
 }
 
 export async function startLab(labSlug: string) {

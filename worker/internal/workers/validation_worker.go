@@ -158,29 +158,31 @@ func (w *ValidationWorker) processJob(ctx context.Context, args jobs.ValidationA
 		dbStatus = "active"
 	}
 
-	// Update session status in DB
+	// Update session status and persist per-check results in DB
 	if w.dbPool != nil {
+		resultsJSON, err := json.Marshal(allResults)
+		if err != nil {
+			log.Printf("Warning: failed to marshal validation results: %v", err)
+			resultsJSON = []byte("[]")
+		}
 		var completedAt *time.Time
 		if dbStatus == "completed" {
 			t := time.Now()
 			completedAt = &t
 		}
 		if completedAt != nil {
-			_, err := w.dbPool.Exec(ctx,
-				`UPDATE lab_sessions SET status = $1, completed_at = $2 WHERE id = $3`,
-				dbStatus, *completedAt, args.SessionID,
+			_, err = w.dbPool.Exec(ctx,
+				`UPDATE lab_sessions SET status = $1, completed_at = $2, validation_results = $3 WHERE id = $4`,
+				dbStatus, *completedAt, resultsJSON, args.SessionID,
 			)
-			if err != nil {
-				log.Printf("Warning: failed to update session status: %v", err)
-			}
 		} else {
-			_, err := w.dbPool.Exec(ctx,
-				`UPDATE lab_sessions SET status = $1 WHERE id = $2`,
-				dbStatus, args.SessionID,
+			_, err = w.dbPool.Exec(ctx,
+				`UPDATE lab_sessions SET status = $1, validation_results = $2 WHERE id = $3`,
+				dbStatus, resultsJSON, args.SessionID,
 			)
-			if err != nil {
-				log.Printf("Warning: failed to update session status: %v", err)
-			}
+		}
+		if err != nil {
+			log.Printf("Warning: failed to update session status: %v", err)
 		}
 	}
 

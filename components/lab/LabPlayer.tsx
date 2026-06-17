@@ -53,6 +53,7 @@ interface LabPlayerProps {
   validationResults?: ValidationResult[];
   doUrl?: string | null;
   onValidationResults?: (results: ValidationResult[]) => void;
+  onValidationQueued?: (sessionId: string) => void;
 }
 
 const DIFFICULTY_STYLES: Record<string, string> = {
@@ -338,6 +339,7 @@ export default function LabPlayer({
   validationResults: propValidationResults,
   doUrl,
   onValidationResults,
+  onValidationQueued,
 }: LabPlayerProps) {
   const router = useRouter();
   const { token } = useAuthStore();
@@ -461,6 +463,7 @@ export default function LabPlayer({
       if (apiError) throw new Error(apiError.error);
       setValidationQueued(true);
       addActivity("Validation Queued — awaiting results");
+      onValidationQueued?.(sid);
 
       // Poll DO events endpoint as fallback in case WebSocket delivery is missed
       if (doUrl && sid) {

@@ -45,6 +45,7 @@ export default function LabPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [endingEnv, setEndingEnv] = useState(false);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
+  const [validationPolling, setValidationPolling] = useState(false);
   const [provisioningEvents, setProvisioningEvents] = useState<
     Array<{ type: string; message: string; timestamp: number }>
   >([]);
@@ -327,6 +328,34 @@ export default function LabPageClient() {
     pollSessionStatus(data.sessionId);
   };
 
+  // Called by LabPlayer after validation is queued. Polls the status API
+  // (backed by PostgreSQL) until validation_results appear — more reliable than DO WS.
+  const startValidationPoll = useCallback((sid: string) => {
+    if (validationPolling) return;
+    setValidationPolling(true);
+    let attempts = 0;
+    const maxAttempts = 20; // 20 × 3s = 60s
+    const poll = async () => {
+      const { data } = await getLabStatus(sid);
+      if (data?.validation_results?.length) {
+        const mapped: ValidationResult[] = data.validation_results.map((r) => ({
+          id: r.checkId,
+          objectiveId: r.checkId,
+          label: r.message,
+          status: r.status === "pass" ? "passed" : r.status === "fail" ? "failed" : "pending",
+          message: r.message,
+        }));
+        setValidationResults(mapped);
+        setValidationPolling(false);
+        return;
+      }
+      attempts++;
+      if (attempts < maxAttempts) setTimeout(poll, 3000);
+      else setValidationPolling(false);
+    };
+    setTimeout(poll, 4000);
+  }, [validationPolling]);
+
   const handleEndEnvironment = async () => {
     if (!environmentId) return;
     setEndingEnv(true);
@@ -386,6 +415,7 @@ export default function LabPageClient() {
           validationResults={validationResults}
           doUrl={doUrl}
           onValidationResults={setValidationResults}
+          onValidationQueued={startValidationPoll}
         />
       )}
     </div>

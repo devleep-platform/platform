@@ -374,7 +374,7 @@ export async function provisioningRoutes(fastify: FastifyInstance) {
 
         const result = await query(
           `SELECT ls.id, ls.lab_id, ls.status, ls.environment_id, ls.created_at, ls.completed_at,
-                  ls.terminal_token, ls.timeout_at, ls.durable_object_id,
+                  ls.terminal_token, ls.timeout_at, ls.durable_object_id, ls.validation_results,
                   le.expires_at, le.terraform_module, le.tunnel_hostname, le.status AS environment_status
            FROM lab_sessions ls
            LEFT JOIN lab_environments le ON le.id = ls.environment_id
