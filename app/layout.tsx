@@ -79,6 +79,11 @@ export default function RootLayout({
         <AuthInitializer>
           {children}
         </AuthInitializer>
+        <script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "e020bcfe756b47c7a78e9236c4e0e3db"}'
+        />
       </body>
     </html>
   );
