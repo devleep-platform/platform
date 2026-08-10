@@ -12,7 +12,7 @@ import { environmentRoutes } from "./api/routes/environments.js";
 import { trackRoutes } from "./api/routes/tracks.js";
 import { adminRoutes } from "./api/routes/admin.js";
 import type { JWTPayload } from "./types/index.js";
-import { runMigrations } from './db/migrate.js'; // FIX 3: Added .js extension
+import { runMigrations } from './db/run-migrations.js';
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
