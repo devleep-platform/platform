@@ -9,79 +9,62 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write   # required for OIDC
+  id-token: write   # Required for AWS OIDC authentication
   contents: read
 
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: devleep-api
   ECS_SERVICE: devleep-api-service
-  ECS_CLUSTER: devleep-cluster
+  ECS_CLUSTER: devleep-ecs-cluster
+  TASK_DEFINITION: devleep-api-task
   CONTAINER_NAME: api
 
 jobs:
-  build:
-    name: Build and push API image
+  build-and-deploy:
+    name: Build and Deploy API
     runs-on: ubuntu-latest
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
+      # 1. AWS OIDC Login 
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy-role
-      - name: Login to ECR
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 2. Login to Amazon ECR
+      - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # 3. Setup Docker Buildx
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      # 4. Build and Push Docker Image to ECR
+      - name: Build and Push Docker Image
         id: build
         uses: docker/build-push-action@v6
         with:
           context: backend
           push: true
-          tags: tags: |
+          tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
-  migrate:
-    name: Run DB migrations
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - run: npm ci
-        working-directory: backend
-
-      - name: Run migrations
-        working-directory: backend
-        run: npx tsx src/db/run-migrations.ts
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
+      # 5. Fetch Current ECS Task Definition
       - name: Download Active Task Definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition ${{ env.CONTAINER_NAME }} \
+            --task-definition ${{ env.TASK_DEFINITION }} \
             --query taskDefinition > task-definition.json
 
-      # 7. Update Task Definition with New Image Tag
+      # 6. Update Task Definition with New Image Tag
       - name: Render New Task Definition
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -90,7 +73,7 @@ jobs:
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
 
-      # 8. Deploy to ECS Fargate (Zero-Downtime Rolling Update & Auto-Rollback)
+      # 7. Deploy to ECS Fargate (Zero-Downtime Rolling Update)
       - name: Deploy to AWS ECS Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
@@ -98,5 +81,3 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
-
-          

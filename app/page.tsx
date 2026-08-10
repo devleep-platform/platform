@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Terminal, Play, Server, Activity,
   CheckCircle2, ChevronRight, AlertTriangle,
   Cpu, HardDrive, Network, Database, ShieldAlert,
-  Cloud
+  Clock, Cloud
 } from 'lucide-react';
 
 // --- CUSTOM ANIMATIONS & STYLES ---
@@ -43,45 +42,24 @@ const STYLES = `
   .animate-blink { animation: blink 1s step-end infinite; }
 `;
 
-const ALL_LOGS = [
-  "Jun 12 02:47:15 systemd[1]: Starting nginx.service...",
-  "Jun 12 02:47:16 nginx[1234]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)",
-  "Jun 12 02:47:17 systemd[1]: nginx.service: Control process exited, code=exited, status=1/FAILURE",
-  "Jun 12 02:47:18 systemd[1]: nginx.service: Failed with result 'exit-code'.",
-  "Jun 12 02:47:18 systemd[1]: Failed to start nginx.service.",
-  "Jun 12 02:47:19 kernel: Out of memory: Killed process 1452 (python3)",
-  "Jun 12 02:47:20 dockerd[892]: Error response from daemon: No space left on device",
-  "Jun 12 02:47:21 kubelet[1023]: Node disk pressure detected. Evicting pods.",
-];
-
 export default function App() {
   const [logs, setLogs] = useState<string[]>([]);
-  const terminalRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    const stream = () => {
-      setLogs([]);
-      ALL_LOGS.forEach((log, i) => {
-        const t = setTimeout(() => {
-          setLogs(prev => [...prev, log]);
-        }, i * 750);
-        timers.push(t);
-      });
-      const reset = setTimeout(() => stream(), ALL_LOGS.length * 750 + 2500);
-      timers.push(reset);
-    };
-
-    stream();
-    return () => timers.forEach(clearTimeout);
+    setMounted(true);
+    const mockLogs = [
+      "Jun 12 02:47:15 systemd[1]: Starting nginx.service...",
+      "Jun 12 02:47:16 nginx[1234]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)",
+      "Jun 12 02:47:17 systemd[1]: nginx.service: Control process exited, code=exited, status=1/FAILURE",
+      "Jun 12 02:47:18 systemd[1]: nginx.service: Failed with result 'exit-code'.",
+      "Jun 12 02:47:18 systemd[1]: Failed to start nginx.service.",
+      "Jun 12 02:47:19 kernel: Out of memory: Killed process 1452 (python3)",
+      "Jun 12 02:47:20 dockerd[892]: Error response from daemon: No space left on device",
+      "Jun 12 02:47:21 kubelet[1023]: Node disk pressure detected. Evicting pods.",
+    ];
+    setLogs(mockLogs);
   }, []);
-
-  useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [logs]);
 
   return (
     <div className="min-h-screen bg-[#070B11] text-slate-300 font-sans selection:bg-[#38BDF8] selection:text-[#070B11] grid-bg overflow-x-hidden">
@@ -91,18 +69,18 @@ export default function App() {
       <nav className="fixed top-0 w-full z-50 bg-[#070B11]/90 backdrop-blur border-b border-[#0F172A] font-mono text-xs uppercase tracking-wider">
         <div className="flex justify-between items-center h-12 px-4 sm:px-6">
           <div className="flex items-center space-x-6">
-            <Link href="/" className="flex items-center gap-2">
-              <Image src="/icons/favicon-96x96.png" alt="Devleep" width={24} height={24} className="rounded-sm" />
-              <span className="text-white font-bold">DEVLEEP_OPS</span>
-            </Link>
+            <span className="text-white font-bold flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#EF4444] rounded-full animate-pulse"></div>
+              DEVLOOP_OPS
+            </span>
             <div className="hidden sm:flex space-x-4 text-slate-500">
-              <Link href="/catalog" className="hover:text-slate-300">Incidents</Link>
-              <Link href="/docs" className="hover:text-slate-300">Docs</Link>
-              <Link href="/community" className="hover:text-slate-300">Community</Link>
-              <Link href="/about" className="hover:text-slate-300">About</Link>
+              <span className="hover:text-slate-300 cursor-pointer">Dashboards</span>
+              <span className="hover:text-slate-300 cursor-pointer">Infrastructure</span>
+              <span className="hover:text-slate-300 cursor-pointer text-[#38BDF8]">Incidents [65]</span>
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <span className="hidden sm:inline-block text-slate-500">SYS_TIME: <Clock size={12} className="inline mr-1 -mt-0.5"/>2:47 AM UTC</span>
             <Link
               href="/auth/login"
               className="bg-[#38BDF8] text-[#070B11] px-3 py-1 font-bold hover:bg-[#7DD3FC] transition-colors"
@@ -151,17 +129,15 @@ export default function App() {
               </div>
 
               {/* Terminal Area */}
-              <div ref={terminalRef} className="p-4 bg-[#070B11] relative h-[300px] overflow-y-auto font-mono text-xs sm:text-sm">
-                <div className="scanline pointer-events-none"></div>
-                <div className="space-y-1.5">
+              <div className="p-4 bg-[#070B11] relative h-[300px] overflow-hidden font-mono text-xs sm:text-sm">
+                <div className="scanline"></div>
+                <div className="space-y-1.5 text-slate-400 absolute w-full pr-4">
                   {logs.map((log, i) => (
                     <div key={i} className={`${log.includes('failed') || log.includes('Error') || log.includes('Killed') ? 'text-[#EF4444]' : 'text-slate-400'}`}>
                       {log}
                     </div>
                   ))}
-                  {logs.length > 0 && (
-                    <div className="text-[#38BDF8] pt-2">root@prod-api-01:~# <span className="w-2 h-4 bg-[#38BDF8] inline-block align-middle animate-blink"></span></div>
-                  )}
+                  <div className="text-[#38BDF8] pt-2">root@prod-api-01:~# <span className="w-2 h-4 bg-[#38BDF8] inline-block align-middle animate-blink"></span></div>
                 </div>
               </div>
             </div>
@@ -170,7 +146,7 @@ export default function App() {
           {/* Right Side - Copy */}
           <div className="order-1 lg:order-2 space-y-8">
             <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tighter leading-[1.05]">
-              Real DevOps Labs. <br />
+              Real DevOps. <br />
               <span className="text-[#38BDF8]">Real Infrastructure.</span>
             </h1>
             
@@ -198,7 +174,7 @@ export default function App() {
             <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm font-mono text-slate-500 mt-8">
               <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-[#22C55E]" /> Runs in YOUR AWS</div>
               <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-[#22C55E]" /> Real EC2 Infra</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-[#22C55E]" /> Free forever</div>
+              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-[#22C55E]" /> ~$0.03 per lab</div>
               <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-[#22C55E]" /> No credit card</div>
             </div>
           </div>
@@ -216,132 +192,71 @@ export default function App() {
         <div className="w-px h-16 bg-gradient-to-b from-[#1E293B] to-transparent"></div>
       </div>
 
-      {/* INCIDENT SECTION */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#EF4444]/5 blur-3xl rounded-full pointer-events-none" />
-
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Copy */}
-          <div className="mb-12">
-            <div className="font-mono text-[10px] text-[#EF4444] uppercase tracking-widest mb-5 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-[#EF4444] rounded-full animate-pulse" />
-              INCIDENT_ACTIVE
-            </div>
-            <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tighter leading-[1.05] mb-6">
-              The pager fires.<br />
-              <span className="text-slate-500">You&apos;re the one who picks up.</span>
-            </h2>
-            <p className="text-lg text-slate-400 max-w-2xl leading-relaxed">
-              No runbook covers this. No senior is online. Just you, a terminal, and something broken in ways you haven&apos;t seen before.
-            </p>
-          </div>
-
-          {/* Terminal panel */}
-          <div className="border border-[#EF4444]/20 bg-[#070B11] overflow-hidden relative shadow-2xl shadow-[#EF4444]/5">
-            <div className="scanline pointer-events-none" />
-
-            {/* Title bar */}
-            <div className="border-b border-[#1E293B] px-4 py-2.5 flex items-center justify-between bg-[#0F172A]">
-              <div className="flex items-center gap-3 font-mono text-xs">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#EF4444]/70" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/70" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E]/20" />
-                </div>
-                <span className="text-slate-500">prod-api-01.internal — SSH session</span>
+      {/* PROBLEM SECTION - Split Screen */}
+      <section className="py-20 border-y border-[#1E293B] bg-[#0F172A]/50 relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Tutorials Teach Commands.<br/><span className="text-[#EF4444]">Production Demands Instincts.</span></h2>
+        </div>
+        
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8">
+          {/* Left - The Illusion (Course Platform) */}
+          <div className="border border-[#1E293B] bg-white rounded-lg overflow-hidden shadow-lg p-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500 flex flex-col justify-center items-center text-slate-800">
+            <div className="w-full max-w-sm space-y-6">
+              <h3 className="font-sans font-bold text-xl text-slate-800">Lesson 17: Restarting Nginx</h3>
+              <div className="bg-slate-50 p-4 rounded border border-slate-200">
+                <p className="text-sm text-slate-500 mb-2">Run this command to fix the issue:</p>
+                <code className="bg-slate-800 text-[#22C55E] px-3 py-2 rounded block font-mono text-sm">
+                  sudo systemctl restart nginx
+                </code>
               </div>
-              <div className="font-mono text-[10px] text-[#EF4444] flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-[#EF4444] rounded-full animate-pulse" />
-                SEV-1 ACTIVE // 3 engineers paged
-              </div>
-            </div>
-
-            {/* Two panes */}
-            <div className="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#1E293B]">
-
-              {/* Left — service status */}
-              <div className="p-6 font-mono text-xs space-y-5">
-                <div>
-                  <span className="text-slate-600">root@prod-api-01:~#</span>
-                  <span className="text-slate-300 ml-2">systemctl --failed</span>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { name: "nginx.service",      detail: "Failed with result 'exit-code'" },
-                    { name: "postgresql.service", detail: "Failed with result 'signal'" },
-                    { name: "docker.service",     detail: "Start request repeated too quickly" },
-                  ].map((s) => (
-                    <div key={s.name} className="flex items-start gap-3">
-                      <span className="text-[#EF4444] mt-0.5">✗</span>
-                      <div>
-                        <div className="text-white">{s.name}</div>
-                        <div className="text-[#EF4444]/70 text-[10px] mt-0.5">{s.detail}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-[#1E293B] pt-4 space-y-2">
-                  <div>
-                    <span className="text-slate-600">root@prod-api-01:~#</span>
-                    <span className="text-slate-300 ml-2">df -h</span>
-                  </div>
-                  <div className="grid grid-cols-5 gap-2 text-[10px] text-slate-600 uppercase tracking-wider">
-                    <span>Filesystem</span><span>Size</span><span>Used</span><span>Avail</span><span>Use%</span>
-                  </div>
-                  <div className="grid grid-cols-5 gap-2 text-[11px]">
-                    <span className="text-slate-400">/dev/xvda1</span>
-                    <span className="text-slate-400">99G</span>
-                    <span className="text-slate-400">99G</span>
-                    <span className="text-[#EF4444]">0</span>
-                    <span className="text-[#EF4444] font-bold">100%</span>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <span className="text-[#38BDF8]">root@prod-api-01:~#</span>
-                  <span className="w-2 h-3.5 bg-[#38BDF8] inline-block align-middle ml-1 animate-blink" />
-                </div>
-              </div>
-
-              {/* Right — live log stream */}
-              <div className="p-6 font-mono text-[11px] space-y-1.5">
-                <div className="mb-3">
-                  <span className="text-slate-600">root@prod-api-01:~#</span>
-                  <span className="text-slate-300 ml-2">journalctl -f --since &quot;5 min ago&quot;</span>
-                </div>
-                {[
-                  { t: "02:47:01", msg: "kernel: EXT4-fs error (device xvda1): No space left on device", err: true },
-                  { t: "02:47:02", msg: "dockerd[892]: Error response from daemon: no space left on device", err: true },
-                  { t: "02:47:03", msg: "nginx[2201]: [emerg] bind() to 0.0.0.0:80 failed (98: Address in use)", err: true },
-                  { t: "02:47:04", msg: "systemd[1]: nginx.service: Failed with result 'exit-code'", err: true },
-                  { t: "02:47:05", msg: "postgres[3341]: FATAL: could not write to lock file", err: true },
-                  { t: "02:47:06", msg: "kernel: Out of memory: Killed process 4521 (node) total-vm:1.2G", err: true },
-                  { t: "02:47:07", msg: "systemd[1]: docker.service: Start request repeated too quickly", err: true },
-                  { t: "02:47:08", msg: "audit[1]: AVC apparmor=DENIED operation=mknod profile=docker", err: false },
-                  { t: "02:47:09", msg: "kubelet[1023]: Node condition DiskPressure set to True", err: true },
-                  { t: "02:47:10", msg: "systemd[1]: Reached target basic.system — awaiting recovery", err: false },
-                ].map((log, i) => (
-                  <div key={i} className={log.err ? "text-[#EF4444]/80" : "text-slate-600"}>
-                    <span className="text-slate-700 mr-2 select-none">{log.t}</span>{log.msg}
-                  </div>
-                ))}
-                <div className="text-slate-700 pt-1">
-                  <span className="mr-2">02:47:11</span>
-                  <span className="animate-blink">▌</span>
-                </div>
-              </div>
+              <button className="w-full bg-[#22C55E] text-white font-bold py-3 rounded shadow-sm flex justify-center items-center gap-2">
+                <CheckCircle2 size={18} /> Execute & Continue
+              </button>
             </div>
           </div>
 
-          {/* Bottom line */}
-          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <p className="text-slate-500 font-mono text-sm">
-              No hints. No walkthrough. Either you fix it or you don&apos;t.
-            </p>
-            <Link href="/catalog" className="font-mono text-xs text-[#38BDF8] hover:underline flex items-center gap-1 shrink-0">
-              Browse incidents <ChevronRight size={12} />
-            </Link>
+          {/* Right - Reality (Real Production Incident) */}
+          <div className="border border-[#EF4444]/50 bg-[#070B11] p-6 font-mono text-sm shadow-2xl relative">
+            <div className="scanline"></div>
+
+            {/* Incident header */}
+            <div className="flex justify-between items-start mb-6 border-b border-[#1E293B] pb-4">
+              <div>
+                <div className="text-[#EF4444] font-bold text-lg">CRITICAL: API_UNREACHABLE</div>
+                <div className="text-slate-500 mt-1">5 services degraded // unknown root cause</div>
+              </div>
+              <Activity className="text-[#EF4444] animate-pulse" />
+            </div>
+
+            {/* Service status */}
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between bg-[#0F172A] p-2 border border-[#1E293B]">
+                <span className="text-slate-400">nginx.service</span>
+                <span className="text-[#EF4444]">FAILED (Code: 1)</span>
+              </div>
+              <div className="flex justify-between bg-[#0F172A] p-2 border border-[#1E293B]">
+                <span className="text-slate-400">/dev/xvda1 (Disk)</span>
+                <span className="text-[#F59E0B]">98% FULL</span>
+              </div>
+            </div>
+
+            {/* Raw terminal output */}
+            <div className="bg-[#0F172A] border border-[#1E293B] p-3 text-xs mb-6">
+              <span className="text-slate-500">root@prod:~#</span> journalctl -u nginx -n 1
+              <div className="text-slate-300 mt-1">nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)</div>
+              <div className="text-slate-500 mt-2">root@prod:~# <span className="w-1.5 h-3.5 bg-slate-500 inline-block align-middle animate-blink"></span></div>
+            </div>
+
+            {/* Validate — no hints, no AI */}
+            <div className="border border-[#1E293B] bg-[#0F172A] p-4">
+              <div className="text-slate-600 text-[10px] uppercase font-mono mb-3 tracking-widest">When you think you&apos;ve fixed it</div>
+              <div className="w-full border border-[#22C55E] text-[#22C55E] py-2.5 flex items-center justify-center gap-2 text-xs uppercase font-bold tracking-wide">
+                <CheckCircle2 size={14} /> Run Validate
+              </div>
+              <div className="mt-3 text-[10px] text-slate-600 text-center font-mono">
+                No hints. No AI. Either it passes or it doesn&apos;t.
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -372,7 +287,7 @@ export default function App() {
             {/* Node 2 */}
             <div className="bg-[#0F172A] border border-[#1E293B] p-6 w-full lg:w-64 text-center hover:border-[#38BDF8] transition-colors group">
               <Cpu className="mx-auto mb-4 text-slate-500 group-hover:text-[#38BDF8]" size={32} />
-              <div className="text-white font-bold mb-2">Devleep Engine</div>
+              <div className="text-white font-bold mb-2">Devloop Engine</div>
               <div className="text-xs text-slate-500">Validates access, selects scenario payload.</div>
             </div>
 
@@ -427,7 +342,7 @@ export default function App() {
             {/* VPC Wrapper */}
             <div className="border-2 border-dashed border-[#22C55E]/40 p-4 sm:p-6 relative">
               <div className="absolute -top-3 left-4 bg-[#070B11] px-2 text-[#22C55E] font-bold flex items-center gap-2">
-                <Network size={14}/> vpc-devleep-lab
+                <Network size={14}/> vpc-devloop-lab
               </div>
               
               {/* Subnet Wrapper */}
@@ -588,14 +503,15 @@ export default function App() {
               </div>
             </div>
 
-            {/* Devleep */}
+            {/* Devloop */}
             <div className="bg-[#070B11] p-8 relative flex flex-col items-center">
               <div className="absolute top-0 left-0 w-full h-1 bg-[#38BDF8]"></div>
-              <div className="font-mono text-xs text-[#38BDF8] uppercase mb-4 font-bold">Devleep Ops Center</div>
+              <div className="font-mono text-xs text-[#38BDF8] uppercase mb-4 font-bold">Devloop Ops Center</div>
               <div className="flex items-baseline gap-2 mb-2">
                 <div className="text-4xl font-bold text-white">$0</div>
+                <div className="text-slate-500 font-mono text-sm">+ ~$0.03</div>
               </div>
-              <div className="text-slate-400 text-sm">Free forever. No platform fee.</div>
+              <div className="text-slate-400 text-sm">platform fee + per lab (AWS direct)</div>
               
               <div className="mt-8 text-xs font-mono space-y-2 text-slate-300 text-left w-full border-t border-[#1E293B] pt-4">
                 <div className="flex justify-between"><span>Access all community labs</span><span className="text-[#38BDF8]">✓</span></div>
@@ -640,61 +556,8 @@ export default function App() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-[#1E293B] bg-[#070B11] pt-12 pb-8">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="flex items-center gap-2 mb-3">
-                <Image src="/icons/favicon-96x96.png" alt="Devleep" width={22} height={22} className="rounded-sm" />
-                <span className="font-mono text-xs font-bold text-white uppercase tracking-widest">Devleep</span>
-              </Link>
-              <p className="text-xs text-slate-600 font-mono leading-relaxed">
-                Real DevOps.<br />Real Infrastructure.
-              </p>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4 className="font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-4">Product</h4>
-              <ul className="space-y-2 font-mono text-xs text-slate-600">
-                <li><Link href="/catalog" className="hover:text-slate-300 transition-colors">Labs</Link></li>
-                <li><Link href="/docs" className="hover:text-slate-300 transition-colors">Docs</Link></li>
-                <li><Link href="/community" className="hover:text-slate-300 transition-colors">Community</Link></li>
-                <li><Link href="/about" className="hover:text-slate-300 transition-colors">About</Link></li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h4 className="font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-4">Resources</h4>
-              <ul className="space-y-2 font-mono text-xs text-slate-600">
-                <li><Link href="/docs" className="hover:text-slate-300 transition-colors">Documentation</Link></li>
-                <li><a href="https://github.com/devleep" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors">GitHub</a></li>
-                <li><Link href="/community" className="hover:text-slate-300 transition-colors">Contributing</Link></li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-4">Legal</h4>
-              <ul className="space-y-2 font-mono text-xs text-slate-600">
-                <li><Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link></li>
-                <li><Link href="/terms" className="hover:text-slate-300 transition-colors">Terms</Link></li>
-                <li><Link href="/security" className="hover:text-slate-300 transition-colors">Security</Link></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-[#1E293B] flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p className="font-mono text-[10px] text-slate-700 uppercase tracking-wider">
-              SYS_STATUS: ONLINE // MIT LICENCE // COMMUNITY CONTRIBUTED
-            </p>
-            <p className="font-mono text-[10px] text-slate-700">
-              © {new Date().getFullYear()} Devleep
-            </p>
-          </div>
-        </div>
+      <footer className="border-t border-[#1E293B] bg-[#070B11] py-8 font-mono text-xs text-slate-600 text-center">
+        <p>SYS_STATUS: ONLINE // LICENCE: MIT // COMMUNITY CONTRIBUTED</p>
       </footer>
     </div>
   );
