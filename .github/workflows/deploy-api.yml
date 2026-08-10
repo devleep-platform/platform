@@ -13,9 +13,11 @@ permissions:
   contents: read
 
 env:
-  ACR: devopslabprod.azurecr.io
-  APP_NAME: devops-lab-prod-api
-  RG: devops-lab-prod-rg
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: devleep-api
+  ECS_SERVICE: devleep-api-service
+  ECS_CLUSTER: devleep-cluster
+  CONTAINER_NAME: api
 
 jobs:
   build:
@@ -27,15 +29,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Login to ACR
-        run: az acr login --name devopslabprod
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy-role
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - uses: docker/setup-buildx-action@v3
 
@@ -45,7 +46,9 @@ jobs:
         with:
           context: backend
           push: true
-          tags: ${{ env.ACR }}/api:sha-${{ github.sha }}
+          tags: tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -72,59 +75,28 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-  deploy:
-    name: Deploy to production
-    needs: [build, migrate]
-    runs-on: ubuntu-latest
+      - name: Download Active Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.CONTAINER_NAME }} \
+            --query taskDefinition > task-definition.json
 
-    steps:
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
+      # 7. Update Task Definition with New Image Tag
+      - name: Render New Task Definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
 
-      - name: Capture current image for rollback
-        run: |
-          CURRENT=$(az containerapp show \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --query "properties.template.containers[0].image" -o tsv)
-          echo "ROLLBACK_IMAGE=$CURRENT" >> $GITHUB_ENV
-          echo "Current image: $CURRENT"
+      # 8. Deploy to ECS Fargate (Zero-Downtime Rolling Update & Auto-Rollback)
+      - name: Deploy to AWS ECS Service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
 
-      - name: Deploy new image
-        run: |
-          az containerapp update \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --image "${{ env.ACR }}/api@${{ needs.build.outputs.digest }}"
-
-      - name: Health check
-        id: health
-        run: |
-          API_URL=$(az containerapp show \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --query "properties.configuration.ingress.fqdn" -o tsv)
-
-          echo "Checking https://$API_URL/health"
-          for i in $(seq 1 18); do
-            HTTP=$(curl -sf -o /dev/null -w "%{http_code}" "https://$API_URL/health" 2>/dev/null || echo "000")
-            echo "Attempt $i/18: HTTP $HTTP"
-            [[ "$HTTP" == "200" ]] && exit 0
-            sleep 10
-          done
-          echo "Health check failed after 3 minutes"
-          exit 1
-
-      - name: Rollback on failure
-        if: failure() && steps.health.outcome == 'failure'
-        run: |
-          echo "Rolling back to: ${{ env.ROLLBACK_IMAGE }}"
-          az containerapp update \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --image "${{ env.ROLLBACK_IMAGE }}"
-          echo "Rollback complete"
+          

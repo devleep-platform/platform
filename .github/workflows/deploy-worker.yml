@@ -9,99 +9,75 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
+  id-token: write   # Required for AWS OIDC authentication
   contents: read
 
 env:
-  ACR: devopslabprod.azurecr.io
-  APP_NAME: devops-lab-prod-worker
-  RG: devops-lab-prod-rg
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: devleep-worker
+  ECS_SERVICE: devleep-worker-service
+  ECS_CLUSTER: devleep-cluster
+  CONTAINER_NAME: worker
 
 jobs:
-  build:
-    name: Build and push Worker image
+  build-and-deploy:
+    name: Build and Deploy Worker
     runs-on: ubuntu-latest
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
+      # 1. AWS OIDC Login
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy-role
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to ACR
-        run: az acr login --name devopslabprod
+      # 2. Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
+      # 3. Setup Docker Buildx
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      # 4. Build and Push Docker Image to ECR
+      - name: Build and Push Worker Image
         id: build
         uses: docker/build-push-action@v6
         with:
           context: worker
           file: worker/Dockerfile
           push: true
-          tags: ${{ env.ACR }}/worker:sha-${{ github.sha }}
-          # GHA cache: provider download (14 min) → cache hit (~2 min)
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=gha,scope=worker
           cache-to: type=gha,mode=max,scope=worker
 
-  deploy:
-    name: Deploy to production
-    needs: build
-    runs-on: ubuntu-latest
+      # 5. Fetch Current ECS Task Definition
+      - name: Download Active Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.CONTAINER_NAME }} \
+            --query taskDefinition > task-definition.json
 
-    steps:
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
+      # 6. Update Task Definition with New Image Tag
+      - name: Render New Task Definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
 
-      - name: Capture current image for rollback
-        run: |
-          CURRENT=$(az containerapp show \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --query "properties.template.containers[0].image" -o tsv)
-          echo "ROLLBACK_IMAGE=$CURRENT" >> $GITHUB_ENV
-          echo "Current image: $CURRENT"
-
-      - name: Deploy new image
-        run: |
-          az containerapp update \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --image "${{ env.ACR }}/worker@${{ needs.build.outputs.digest }}"
-
-      - name: Wait for healthy revision
-        id: health
-        run: |
-          for i in $(seq 1 20); do
-            STATE=$(az containerapp revision list \
-              --name ${{ env.APP_NAME }} \
-              --resource-group ${{ env.RG }} \
-              --query "sort_by(@, &properties.createdTime)[-1].properties.healthState" \
-              -o tsv 2>/dev/null || echo "Unknown")
-            echo "Attempt $i/20: $STATE"
-            [[ "$STATE" == "Healthy" ]] && exit 0
-            sleep 15
-          done
-          echo "Worker did not become healthy in 5 minutes"
-          exit 1
-
-      - name: Rollback on failure
-        if: failure() && steps.health.outcome == 'failure'
-        run: |
-          echo "Rolling back to: ${{ env.ROLLBACK_IMAGE }}"
-          az containerapp update \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RG }} \
-            --image "${{ env.ROLLBACK_IMAGE }}"
-          echo "Rollback complete"
+      # 7. Deploy to ECS Fargate
+      - name: Deploy to AWS ECS Service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
