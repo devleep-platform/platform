@@ -16,7 +16,7 @@ env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: devleep-worker
   ECS_SERVICE: devleep-worker-service
-  ECS_CLUSTER: devleep-cluster
+  ECS_CLUSTER: devleep-ecs-cluster
   CONTAINER_NAME: worker
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
       - name: Download Active Task Definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition ${{ env.CONTAINER_NAME }} \
+            --task-definition ${{ env.TASK_DEFINITION }} \
             --query taskDefinition > task-definition.json
 
       # 6. Update Task Definition with New Image Tag
