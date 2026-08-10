@@ -17,6 +17,7 @@ env:
   ECR_REPOSITORY: devleep-worker
   ECS_SERVICE: devleep-worker-service
   ECS_CLUSTER: devleep-ecs-cluster
+  TASK_DEFINITION: devleep-worker-task
   CONTAINER_NAME: worker
 
 jobs:
