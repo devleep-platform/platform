@@ -10,9 +10,7 @@ import { labRoutes } from "./api/routes/labs.js";
 import { provisioningRoutes } from "./api/routes/provisioning.js";
 import { environmentRoutes } from "./api/routes/environments.js";
 import { trackRoutes } from "./api/routes/tracks.js";
-import { adminRoutes } from "./api/routes/admin.js";
 import type { JWTPayload } from "./types/index.js";
-import { runMigrations } from './db/run-migrations.js';
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
@@ -43,12 +41,27 @@ await fastify.register(fastifyHelmet, {
   },
 });
 
-const corsOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-  : ["http://localhost:3000", "https://devleep.com"];
-
 await fastify.register(fastifyCors, {
-  origin: corsOrigins,
+  origin: (origin, cb) => {
+    // 1. Allow internal requests with no origin (e.g., server-to-server)
+    if (!origin) {
+      cb(null, true);
+      return;
+    }
+
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+      : ["http://localhost:3000", "https://devleep.com"];
+
+    // 2. Allow if it's an exact match in your Secrets Manager OR a Cloudflare preview URL
+    if (allowedOrigins.includes(origin) || origin.endsWith('.devleep.pages.dev')) {
+      cb(null, true);
+      return;
+    }
+
+    // 3. Block everything else
+    cb(new Error("Not allowed by CORS"), false);
+  },
   credentials: true,
 });
 
@@ -88,17 +101,11 @@ await labRoutes(fastify);
 await provisioningRoutes(fastify);
 await environmentRoutes(fastify);
 await trackRoutes(fastify);
-await adminRoutes(fastify);
 
 // Start server
 const start = async () => {
   try {
-    // FIX 1: Run migrations securely within the VPC before accepting traffic
-    console.log("Running database migrations...");
-    await runMigrations();
-
-    // FIX 2: Changed fallback port to 8080 to match AWS ALB target group
-    const port = parseInt(process.env.PORT || "8080", 10);
+    const port = parseInt(process.env.PORT || "3001", 10);
     await fastify.listen({ port, host: "0.0.0.0" });
     console.log(`✓ Server listening on port ${port}`);
   } catch (err) {
@@ -107,5 +114,4 @@ const start = async () => {
   }
 };
 
-// FIX 4: Actually invoke the start function
 start();
