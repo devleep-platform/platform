@@ -11,6 +11,7 @@ import { provisioningRoutes } from "./api/routes/provisioning.js";
 import { environmentRoutes } from "./api/routes/environments.js";
 import { trackRoutes } from "./api/routes/tracks.js";
 import type { JWTPayload } from "./types/index.js";
+import { adminRoutes } from "./api/routes/admin.js";
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
@@ -101,6 +102,7 @@ await labRoutes(fastify);
 await provisioningRoutes(fastify);
 await environmentRoutes(fastify);
 await trackRoutes(fastify);
+await adminRoutes(fastify);
 
 // Start server
 const start = async () => {
