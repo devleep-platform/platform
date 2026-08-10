@@ -7,6 +7,7 @@ import { getLabBySlug } from "@/lib/api/labs";
 import type { Lab } from "@/lib/api/labs";
 import { startLab, getLabStatus, recoverLabSession } from "@/lib/api/provisioning";
 import { endEnvironment } from "@/lib/api/environments";
+import { generateStaticParams } from "@/app/tracks/[slug]/page";
 
 type LabConflictError = {
   error?: string;

@@ -89,6 +89,8 @@ resource "aws_ecs_task_definition" "api" {
       { name = "CLOUDFLARE_ZONE_ID", valueFrom = "${aws_secretsmanager_secret.platform_secrets-v2.arn}:CLOUDFLARE_ZONE_ID::" },
       { name = "CLOUDFLARE_TUNNEL_BASE_DOMAIN", valueFrom = "${aws_secretsmanager_secret.platform_secrets-v2.arn}:CLOUDFLARE_TUNNEL_BASE_DOMAIN::" },
       { name = "CORS_ORIGIN", valueFrom = "${aws_secretsmanager_secret.platform_secrets-v2.arn}:CORS_ORIGIN::" }
+      { name = "AWS_ACCESS_KEY_ID", valueFrom = "${aws_secretsmanager_secret.platform_secrets-v2.arn}:AWS_ACCESS_KEY_ID::" }
+      { name = "AWS_SECRET_ACCESS_KEY", valueFrom = "${aws_secretsmanager_secret.platform_secrets-v2.arn}:AWS_SECRET_ACCESS_KEY::" }
     ]
 
 
