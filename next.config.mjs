@@ -8,7 +8,7 @@ const isDev = process.env.NODE_ENV === "development";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: projectRoot,
-  output: isDev ? undefined : "export",
+  output: undefined,
   experimental: {
     cpus: 1,
     webpackBuildWorker: false,
